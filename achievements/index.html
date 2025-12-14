@@ -10,67 +10,88 @@
             background: #000;
             color: #fff;
             margin: 0;
-            padding: 15px;
+            padding: 20px;
             text-align: center;
         }
 
+        h1 {
+            font-size: 28px;
+            margin-bottom: 25px;
+        }
+
         .item {
-            margin: 0 auto 25px auto;
+            margin: 0 auto 30px auto;
             background: #0f0f0f;
-            border-radius: 15px;
+            border-radius: 18px;
             overflow: hidden;
             border: 1px solid #222;
-            padding: 15px;
-            max-width: 350px;
+            padding: 18px;
+            max-width: 95%;   /* BIGGER on phones */
         }
 
         .item img {
             width: 100%;
-            max-width: 280px;
+            max-width: 100%;
             height: auto;
             display: block;
             margin: 0 auto;
-            border-radius: 12px;
+            border-radius: 14px;
         }
 
         .desc {
-            margin-top: 12px;
+            margin-top: 15px;
             background: #181818;
-            padding: 12px;
-            border-radius: 10px;
-            border-left: 3px solid #3a47d5;
-            font-size: 14px;
-            color: #d0d0d0;
-            line-height: 1.4;
-            text-align: center;
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #3a47d5;
+            font-size: 16px;  /* Bigger text */
+            color: #e0e0e0;
+            line-height: 1.5;
         }
 
         .download-btn {
             display: inline-flex;
             justify-content: center;
             align-items: center;
-            gap: 6px;
-            margin-top: 10px;
-            padding: 8px 14px;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 12px 20px; /* Bigger button */
             background: linear-gradient(135deg, #3a47d5, #00b2ff);
             color: #fff;
-            font-size: 13px;
-            border-radius: 20px;
+            font-size: 15px;
+            border-radius: 25px;
             text-decoration: none;
             font-weight: bold;
             transition: 0.25s;
-            box-shadow: 0 3px 10px rgba(0, 150, 255, 0.3);
-        }
-
-        .download-btn:hover {
-            transform: translateY(-2px) scale(1.04);
-            box-shadow: 0 6px 14px rgba(0, 150, 255, 0.45);
+            box-shadow: 0 4px 14px rgba(0, 150, 255, 0.35);
         }
 
         .download-btn i {
-            font-size: 14px;
+            font-size: 16px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 18px rgba(0, 150, 255, 0.5);
+        }
+
+        /* Optional: EVEN BIGGER on very small phones */
+        @media (max-width: 360px) {
+            h1 {
+                font-size: 26px;
+            }
+
+            .desc {
+                font-size: 15px;
+            }
+
+            .download-btn {
+                font-size: 14px;
+                padding: 11px 18px;
+            }
         }
     </style>
+
 </head>
 <body>
 
