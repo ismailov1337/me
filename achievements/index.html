@@ -2,139 +2,178 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Achievements</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #3a47d5, #00b2ff);
+            --card-bg: #0f0f0f;
+            --desc-bg: #181818;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #000;
             color: #fff;
             margin: 0;
             padding: 20px;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         h1 {
-            font-size: 28px;
-            margin-bottom: 25px;
+            font-size: clamp(24px, 5vw, 32px); /* Responsive font size */
+            margin: 20px 0 40px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* THE GRID SYSTEM */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px; /* Limits width on ultrawide monitors */
         }
 
         .item {
-            margin: 0 auto 30px auto;
-            background: #0f0f0f;
-            border-radius: 18px;
+            background: var(--card-bg);
+            border-radius: 20px;
             overflow: hidden;
             border: 1px solid #222;
-            padding: 18px;
-            max-width: 95%;   /* BIGGER on phones */
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .item:hover {
+            border-color: #3a47d5;
+        }
+
+        .img-container {
+            width: 100%;
+            aspect-ratio: 4 / 3; /* Keeps all images the same height */
+            overflow: hidden;
+            border-radius: 12px;
         }
 
         .item img {
             width: 100%;
-            max-width: 100%;
-            height: auto;
+            height: 100%;
+            object-fit: cover; /* Crops image to fill container without stretching */
             display: block;
-            margin: 0 auto;
-            border-radius: 14px;
         }
 
         .desc {
             margin-top: 15px;
-            background: #181818;
+            background: var(--desc-bg);
             padding: 15px;
             border-radius: 12px;
             border-left: 4px solid #3a47d5;
-            font-size: 16px;  /* Bigger text */
+            font-size: 16px;
             color: #e0e0e0;
-            line-height: 1.5;
+            line-height: 1.4;
+            font-weight: 500;
+            flex-grow: 1; /* Ensures buttons align even if text length differs */
+            display: flex;
+            align-items: center;
         }
 
         .download-btn {
             display: inline-flex;
             justify-content: center;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             margin-top: 15px;
-            padding: 12px 20px; /* Bigger button */
-            background: linear-gradient(135deg, #3a47d5, #00b2ff);
+            padding: 14px;
+            background: var(--primary-gradient);
             color: #fff;
             font-size: 15px;
-            border-radius: 25px;
+            border-radius: 12px;
             text-decoration: none;
             font-weight: bold;
             transition: 0.25s;
-            box-shadow: 0 4px 14px rgba(0, 150, 255, 0.35);
-        }
-
-        .download-btn i {
-            font-size: 16px;
         }
 
         .download-btn:hover {
-            transform: translateY(-2px) scale(1.05);
-            box-shadow: 0 8px 18px rgba(0, 150, 255, 0.5);
+            filter: brightness(1.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 150, 255, 0.4);
         }
 
-        /* Optional: EVEN BIGGER on very small phones */
-        @media (max-width: 360px) {
-            h1 {
-                font-size: 26px;
+        /* Tablet/Phone Adjustments */
+        @media (max-width: 480px) {
+            body { padding: 15px; }
+            .container {
+                grid-template-columns: 1fr; /* Force 1 column on small phones */
             }
-
-            .desc {
-                font-size: 15px;
-            }
-
-            .download-btn {
-                font-size: 14px;
-                padding: 11px 18px;
-            }
+            .item { padding: 12px; }
         }
     </style>
-
 </head>
 <body>
 
 <h1>My Achievements</h1>
 
-<div class="item">
-    <img src="pdp-cpp.jpg" alt="Achievement 1">
-    <div class="desc">C++ Backend Development & Foundation</div>
-    <a class="download-btn" href="pdp-cpp.jpg" download>
-        <i class="fa-solid fa-download"></i> Download
-    </a>
-</div>
+<div class="container">
+    <!-- Item 1 -->
+    <div class="item">
+        <div class="img-container">
+            <img src="pdp-cpp.jpg" alt="C++">
+        </div>
+        <div class="desc">C++ Backend Development & Foundation</div>
+        <a class="download-btn" href="pdp-cpp.jpg" download>
+            <i class="fa-solid fa-download"></i> Download Certificate
+        </a>
+    </div>
 
-<div class="item">
-    <img src="pdp-java.jpg" alt="Achievement 2">
-    <div class="desc">Java Backend Development</div>
-    <a class="download-btn" href="pdp-java.jpg" download>
-        <i class="fa-solid fa-download"></i> Download
-    </a>
-</div>
+    <!-- Item 2 -->
+    <div class="item">
+        <div class="img-container">
+            <img src="pdp-java.jpg" alt="Java">
+        </div>
+        <div class="desc">Java Backend Development</div>
+        <a class="download-btn" href="pdp-java.jpg" download>
+            <i class="fa-solid fa-download"></i> Download Certificate
+        </a>
+    </div>
 
-<div class="item">
-    <img src="najottalim-python.jpg" alt="Achievement 3">
-    <div class="desc">Python Backend Development</div>
-    <a class="download-btn" href="najottalim-python.jpg" download>
-        <i class="fa-solid fa-download"></i> Download
-    </a>
-</div>
+    <!-- Item 3 -->
+    <div class="item">
+        <div class="img-container">
+            <img src="najottalim-python.jpg" alt="Python">
+        </div>
+        <div class="desc">Python Backend Development</div>
+        <a class="download-btn" href="najottalim-python.jpg" download>
+            <i class="fa-solid fa-download"></i> Download Certificate
+        </a>
+    </div>
 
-<div class="item">
-    <img src="red-0.jpg" alt="Achievement 4">
-    <div class="desc">RED-0(PEN-100) & Cyber Security</div>
-    <a class="download-btn" href="red-0.jpg" download>
-        <i class="fa-solid fa-download"></i> Download
-    </a>
-</div>
+    <!-- Item 4 -->
+    <div class="item">
+        <div class="img-container">
+            <img src="red-0.jpg" alt="Cyber Security">
+        </div>
+        <div class="desc">RED-0(PEN-100) & Cyber Security</div>
+        <a class="download-btn" href="red-0.jpg" download>
+            <i class="fa-solid fa-download"></i> Download Certificate
+        </a>
+    </div>
 
-<div class="item">
-    <img src="crta.png" alt="Achievement 5">
-    <div class="desc">CRTA</div>
-    <a class="download-btn" href="crta.png" download>
-        <i class="fa-solid fa-download"></i> Download
-    </a>
+    <!-- Item 5 -->
+    <div class="item">
+        <div class="img-container">
+            <img src="crta.png" alt="CRTA">
+        </div>
+        <div class="desc">CRTA Certified</div>
+        <a class="download-btn" href="crta.png" download>
+            <i class="fa-solid fa-download"></i> Download Certificate
+        </a>
+    </div>
 </div>
 
 </body>
