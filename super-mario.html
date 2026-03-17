@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+          background: #000;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          font-family: 'Press Start 2P', monospace;
+          overflow: hidden;
+        }
+
+        #ui {
+          display: flex;
+          justify-content: space-between;
+          width: 800px;
+          padding: 8px 12px;
+          background: #000;
+          color: #fff;
+          font-size: 10px;
+          letter-spacing: 1px;
+        }
+
+        #ui span { display: flex; flex-direction: column; gap: 4px; }
+        #ui .label { color: #fff; font-size: 8px; }
+        #ui .value { color: #fff; font-size: 10px; }
+
+        #gameContainer {
+          position: relative;
+          width: 800px;
+          height: 400px;
+          overflow: hidden;
+          border: 3px solid #444;
+        }
+
+        canvas {
+          display: block;
+          image-rendering: pixelated;
+        }
+
+        #overlay {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0,0,0,0.75);
+          color: #fff;
+          gap: 20px;
+          z-index: 10;
+        }
+
+        #overlay h1 {
+          font-size: 28px;
+          color: #E52521;
+          text-shadow: 4px 4px 0 #7B1FA2, -2px -2px 0 #000;
+          letter-spacing: 2px;
+        }
+
+        #overlay p { font-size: 9px; color: #aaa; line-height: 1.8; text-align: center; }
+
+        #overlay button {
+          font-family: 'Press Start 2P', monospace;
+          font-size: 12px;
+          padding: 14px 28px;
+          background: #E52521;
+          color: #fff;
+          border: none;
+          cursor: pointer;
+          box-shadow: 4px 4px 0 #7B1FA2;
+          transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        #overlay button:hover {
+          transform: translate(-2px, -2px);
+          box-shadow: 6px 6px 0 #7B1FA2;
+        }
+
+        #overlay button:active {
+          transform: translate(2px, 2px);
+          box-shadow: 2px 2px 0 #7B1FA2;
+        }
+
+        #controls {
+          width: 800px;
+          display: flex;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px 0;
+          color: #555;
+          font-size: 7px;
+        }
+
+        #controls span { margin: 0 8px; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <span><div class="label">MARIO</div><div class="value" id="scoreDisplay">000000</div></span>
+    <span><div class="label">COINS</div><div class="value" id="coinsDisplay">×00</div></span>
+    <span><div class="label">WORLD</div><div class="value">1-1</div></span>
+    <span><div class="label">TIME</div><div class="value" id="timeDisplay">300</div></span>
+    <span><div class="label">LIVES</div><div class="value" id="livesDisplay">×03</div></span>
+</div>
+
+<div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div id="overlay">
+        <h1>SUPER MARIO</h1>
+        <p>← → to move &nbsp;|&nbsp; Z or ↑ to jump<br>Collect coins, stomp enemies!</p>
+        <button onclick="startGame()">▶ START GAME</button>
+    </div>
+</div>
+
+<div id="controls">
+    <span>← → MOVE</span>
+    <span>Z / ↑ JUMP</span>
+    <span>Stomp Goombas!</span>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = 800, H = 400;
+    const GROUND = H - 48;
+    const GRAVITY = 0.55;
+    const JUMP_FORCE = -13;
+    const MOVE_SPEED = 4;
+    const TILE = 32;
+
+    let keys = {};
+    let gameState = 'idle'; // idle, playing, dead, win, gameover
+    let score = 0, coins = 0, lives = 3, timeLeft = 300;
+    let timeTimer = null;
+    let cameraX = 0;
+
+    // ─── COLORS ────────────────────────────────────────────
+    const C = {
+      sky: '#5C94FC',
+      ground: '#C84C0C',
+      groundTop: '#00A800',
+      brick: '#C84C0C',
+      brickDark: '#8C3400',
+      question: '#E8A000',
+      questionDark: '#845400',
+      coin: '#E8D000',
+      pipe: '#00A800',
+      pipeDark: '#006400',
+      mario_hat: '#E52521',
+      mario_face: '#FFCA7E',
+      mario_shirt: '#E52521',
+      mario_pants: '#0052A2',
+      mario_shoes: '#8C5530',
+      goomba_body: '#8C4200',
+      goomba_feet: '#6B3200',
+      goomba_eyes: '#fff',
+      cloud: '#fff',
+      hill: '#00A800',
+    };
+
+    // ─── MARIO ─────────────────────────────────────────────
+    const mario = {
+      x: 80, y: GROUND - 48, w: 24, h: 32,
+      vx: 0, vy: 0,
+      onGround: false,
+      alive: true,
+      big: false,
+      deathTimer: 0,
+      facingRight: true,
+      running: false,
+      animFrame: 0,
+      animTimer: 0,
+    };
+
+    // ─── WORLD ─────────────────────────────────────────────
+    const WORLD_W = 4800;
+
+    let platforms = [];
+    let bricks = [];
+    let questionBlocks = [];
+    let pipes = [];
+    let goombas = [];
+    let coinObjs = [];
+    let particles = [];
+    let floatingTexts = [];
+    let flagReached = false;
+    let flagX = WORLD_W - 200;
+
+    function buildLevel() {
+      platforms = [];
+      bricks = [];
+      questionBlocks = [];
+      pipes = [];
+      goombas = [];
+      coinObjs = [];
+      particles = [];
+      floatingTexts = [];
+      flagReached = false;
+      cameraX = 0;
+
+      // Ground
+      for (let x = 0; x < WORLD_W; x += TILE) {
+        // gap near x=1800
+        if (x >= 1800 && x < 1960) continue;
+        // gap near x=2800
+        if (x >= 2800 && x < 2928) continue;
+        platforms.push({ x, y: GROUND, w: TILE, h: 48 });
+      }
+
+      // Bricks & Question blocks
+      const layout = [
+        // x, y, type (b=brick, q=question)
+        [352, GROUND-160, 'b'], [384, GROUND-160, 'q'], [416, GROUND-160, 'b'],
+        [384, GROUND-288, 'q'],
+        [704, GROUND-160, 'q'], [736, GROUND-160, 'b'], [768, GROUND-160, 'q'], [800, GROUND-160, 'b'], [832, GROUND-160, 'q'],
+        [1024, GROUND-160, 'b'], [1056, GROUND-160, 'b'], [1088, GROUND-160, 'b'],
+        [1280, GROUND-160, 'q'],
+        [1504, GROUND-160, 'b'], [1536, GROUND-160, 'q'], [1568, GROUND-160, 'b'],
+        [2048, GROUND-160, 'q'], [2080, GROUND-160, 'b'],
+        [2400, GROUND-160, 'b'], [2432, GROUND-160, 'b'], [2464, GROUND-160, 'q'], [2496, GROUND-160, 'b'],
+        [3200, GROUND-160, 'q'],
+        [3600, GROUND-160, 'b'], [3632, GROUND-160, 'q'], [3664, GROUND-160, 'b'],
+      ];
+      layout.forEach(([x,y,t]) => {
+        if (t === 'b') bricks.push({ x, y, w: TILE, h: TILE, hit: false });
+        else questionBlocks.push({ x, y, w: TILE, h: TILE, hit: false, coin: true });
+      });
+
+      // Elevated platforms
+      const elevated = [
+        [2000, GROUND-160, 4], [2200, GROUND-96, 3],
+        [3000, GROUND-96, 3], [3100, GROUND-192, 4],
+        [3500, GROUND-128, 5],
+      ];
+      elevated.forEach(([x,y,count]) => {
+        for (let i = 0; i < count; i++)
+          platforms.push({ x: x + i*TILE, y, w: TILE, h: H-y });
+      });
+
+      // Pipes
+      const pipeData = [
+        [400, 2, true], [680, 3, true], [1050, 2, false], [1900, 4, true],
+        [2600, 3, true], [3300, 2, false], [3900, 3, true],
+      ];
+      pipeData.forEach(([x, height, hasEnemy]) => {
+        pipes.push({ x, y: GROUND - height*TILE, w: TILE*2, h: height*TILE, hasEnemy });
+      });
+
+      // Goombas
+      const goombaPositions = [600, 900, 1100, 1350, 1700, 2100, 2350, 2700, 2950, 3250, 3550, 3800, 4100];
+      goombaPositions.forEach(x => {
+        goombas.push({
+          x, y: GROUND - 28, w: 26, h: 28,
+          vx: -1.2, vy: 0, alive: true,
+          squished: false, squishTimer: 0,
+          animFrame: 0, animTimer: 0,
+        });
+      });
+    }
+
+    // ─── DRAWING HELPERS ───────────────────────────────────
+    function drawPixelMario(x, y, facingRight, running, onGround, frame) {
+      const ox = facingRight ? 0 : 0;
+      ctx.save();
+      if (!facingRight) {
+        ctx.translate(x + 12, 0);
+        ctx.scale(-1, 1);
+        x = -12;
+      } else {
+        ctx.translate(x, 0);
+        x = 0;
+      }
+
+      // hat
+      ctx.fillStyle = C.mario_hat;
+      ctx.fillRect(x+4, y, 16, 6);
+      ctx.fillRect(x+2, y+6, 20, 4);
+
+      // face
+      ctx.fillStyle = C.mario_face;
+      ctx.fillRect(x+4, y+10, 16, 10);
+
+      // eyes
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x+10, y+12, 3, 3);
+      // mustache
+      ctx.fillStyle = '#5C3317';
+      ctx.fillRect(x+4, y+16, 7, 3);
+      ctx.fillRect(x+13, y+16, 7, 3);
+
+      // shirt
+      ctx.fillStyle = C.mario_shirt;
+      ctx.fillRect(x+2, y+20, 20, 6);
+
+      // pants
+      ctx.fillStyle = C.mario_pants;
+      const legOffset = (running && !onGround) ? (frame % 2 === 0 ? -2 : 2) : 0;
+      ctx.fillRect(x+2, y+26, 8, 6);
+      ctx.fillRect(x+14, y+26, 8, 6);
+
+      // shoes
+      ctx.fillStyle = C.mario_shoes;
+      ctx.fillRect(x+0, y+30, 10, 4);
+      ctx.fillRect(x+14, y+30, 10, 4);
+
+      ctx.restore();
+    }
+
+    function drawGoomba(g, cx) {
+      const rx = g.x - cx;
+      if (g.squished) {
+        ctx.fillStyle = C.goomba_body;
+        ctx.fillRect(rx, g.y+16, g.w, 8);
+        ctx.fillStyle = C.goomba_feet;
+        ctx.fillRect(rx, g.y+22, 10, 6);
+        ctx.fillRect(rx+g.w-10, g.y+22, 10, 6);
+        return;
+      }
+      // body
+      ctx.fillStyle = C.goomba_body;
+      ctx.fillRect(rx+2, g.y, g.w-4, g.h-8);
+      // feet
+      ctx.fillStyle = C.goomba_feet;
+      const fOff = g.animFrame === 0 ? 0 : 2;
+      ctx.fillRect(rx, g.y+g.h-10, 10, 10);
+      ctx.fillRect(rx+g.w-10, g.y+g.h-10, 10, 10);
+      // eyes
+      ctx.fillStyle = C.goomba_eyes;
+      ctx.fillRect(rx+5, g.y+4, 6, 6);
+      ctx.fillRect(rx+g.w-11, g.y+4, 6, 6);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(rx+6, g.y+6, 3, 3);
+      ctx.fillRect(rx+g.w-9, g.y+6, 3, 3);
+      // eyebrows angry
+      ctx.fillStyle = '#000';
+      ctx.fillRect(rx+4, g.y+2, 6, 2);
+      ctx.fillRect(rx+g.w-10, g.y+2, 6, 2);
+    }
+
+    function drawBrick(x, y) {
+      ctx.fillStyle = C.brick;
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = C.brickDark;
+      // mortar lines
+      ctx.fillRect(x, y+10, TILE, 2);
+      ctx.fillRect(x, y+22, TILE, 2);
+      ctx.fillRect(x+TILE/2, y, 2, 10);
+      ctx.fillRect(x, y+12, 2, 10);
+      ctx.fillRect(x+TILE/2, y+12, 2, 10);
+      // highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fillRect(x+1, y+1, TILE-2, 3);
+    }
+
+    function drawQuestion(x, y, hit) {
+      ctx.fillStyle = hit ? '#8C6800' : C.question;
+      ctx.fillRect(x, y, TILE, TILE);
+      if (!hit) {
+        ctx.fillStyle = C.questionDark;
+        ctx.fillRect(x+2, y+TILE-4, TILE-4, 4);
+        ctx.fillRect(x+2, y, TILE-4, 2);
+        ctx.fillStyle = '#fff';
+        // ? symbol
+        ctx.fillRect(x+12, y+6, 8, 4);
+        ctx.fillRect(x+16, y+10, 4, 4);
+        ctx.fillRect(x+12, y+14, 8, 4);
+        ctx.fillRect(x+12, y+22, 8, 4);
+      } else {
+        ctx.fillStyle = '#6B4C00';
+        ctx.fillRect(x+12, y+12, 8, 8);
+      }
+    }
+
+    function drawPipe(px, py, pw, ph, cx) {
+      const rx = px - cx;
+      // body
+      ctx.fillStyle = C.pipe;
+      ctx.fillRect(rx+4, py+TILE, pw-8, ph-TILE);
+      // dark stripe
+      ctx.fillStyle = C.pipeDark;
+      ctx.fillRect(rx+pw/2, py+TILE, 6, ph-TILE);
+      // head
+      ctx.fillStyle = C.pipe;
+      ctx.fillRect(rx, py, pw, TILE);
+      ctx.fillStyle = C.pipeDark;
+      ctx.fillRect(rx+pw/3, py, 8, TILE);
+      // rim
+      ctx.fillStyle = '#00C800';
+      ctx.fillRect(rx, py, pw, 4);
+    }
+
+    function drawCloud(x, y, cx) {
+      const rx = x - cx;
+      ctx.fillStyle = C.cloud;
+      ctx.fillRect(rx+8, y+8, 32, 16);
+      ctx.fillRect(rx, y+16, 48, 12);
+      ctx.fillRect(rx+12, y, 24, 12);
+      ctx.fillRect(rx+4, y+4, 12, 12);
+      ctx.fillRect(rx+32, y+4, 12, 12);
+    }
+
+    function drawHill(x, y, cx, size) {
+      const rx = x - cx;
+      ctx.fillStyle = C.hill;
+      ctx.beginPath();
+      ctx.moveTo(rx, y);
+      ctx.quadraticCurveTo(rx + size/2, y - size*0.6, rx + size, y);
+      ctx.fill();
+      ctx.fillStyle = '#00C800';
+      ctx.beginPath();
+      ctx.arc(rx + size/2, y - size*0.55, size*0.1, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    function drawFlag(cx) {
+      const rx = flagX - cx;
+      ctx.fillStyle = '#888';
+      ctx.fillRect(rx-2, GROUND - 200, 4, 200);
+      ctx.fillStyle = '#E52521';
+      ctx.fillRect(rx+2, GROUND-200, 28, 20);
+      ctx.fillStyle = '#000';
+      ctx.font = '10px Press Start 2P';
+      ctx.fillText('★', rx+6, GROUND-185);
+    }
+
+    // ─── PARTICLES ─────────────────────────────────────────
+    function spawnParticles(x, y, color, count=6) {
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI*2/count)*i;
+        particles.push({
+          x, y, vx: Math.cos(angle)*3, vy: Math.sin(angle)*3 - 2,
+          color, life: 40, maxLife: 40,
+        });
+      }
+    }
+
+    function spawnFloatingText(x, y, text, color='#fff') {
+      floatingTexts.push({ x, y, text, color, life: 60, maxLife: 60 });
+    }
+
+    // ─── COLLISION ─────────────────────────────────────────
+    function rectOverlap(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x &&
+             a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function resolvePlatformCollision(obj, plat) {
+      const overlapX = Math.min(obj.x+obj.w, plat.x+plat.w) - Math.max(obj.x, plat.x);
+      const overlapY = Math.min(obj.y+obj.h, plat.y+plat.h) - Math.max(obj.y, plat.y);
+      if (overlapX <= 0 || overlapY <= 0) return false;
+      if (overlapY < overlapX) {
+        if (obj.y+obj.h/2 < plat.y+plat.h/2) {
+          obj.y = plat.y - obj.h;
+          if (obj.vy > 0) { obj.vy = 0; obj.onGround = true; }
+        } else {
+          obj.y = plat.y + plat.h;
+          if (obj.vy < 0) obj.vy = 2;
+        }
+      } else {
+        if (obj.x+obj.w/2 < plat.x+plat.w/2) {
+          obj.x = plat.x - obj.w;
+        } else {
+          obj.x = plat.x + plat.w;
+        }
+        obj.vx = 0;
+      }
+      return true;
+    }
+
+    // ─── UPDATE ────────────────────────────────────────────
+    function updateMario() {
+      if (!mario.alive) {
+        mario.deathTimer--;
+        if (mario.deathTimer <= 0) {
+          lives--;
+          if (lives <= 0) {
+            gameState = 'gameover';
+            showOverlay('GAME OVER', 'Press Start to try again', 'PLAY AGAIN', startGame);
+          } else {
+            respawn();
+          }
+        }
+        return;
+      }
+
+      // Input
+      const left = keys['ArrowLeft'] || keys['a'] || keys['A'];
+      const right = keys['ArrowRight'] || keys['d'] || keys['D'];
+      const jump = keys['ArrowUp'] || keys['z'] || keys['Z'] || keys['w'] || keys['W'] || keys[' '];
+
+      if (left) { mario.vx -= 0.8; mario.facingRight = false; mario.running = true; }
+      else if (right) { mario.vx += 0.8; mario.facingRight = true; mario.running = true; }
+      else { mario.vx *= 0.75; mario.running = false; }
+
+      mario.vx = Math.max(-MOVE_SPEED, Math.min(MOVE_SPEED, mario.vx));
+
+      if (jump && mario.onGround) {
+        mario.vy = JUMP_FORCE;
+        mario.onGround = false;
+      }
+
+      mario.vy += GRAVITY;
+      mario.x += mario.vx;
+      mario.y += mario.vy;
+
+      // Keep in world
+      if (mario.x < 0) mario.x = 0;
+      if (mario.x + mario.w > WORLD_W) mario.x = WORLD_W - mario.w;
+
+      mario.onGround = false;
+
+      const allSolids = [...platforms, ...bricks.filter(b=>!b.hit), ...questionBlocks, ...pipes];
+      for (const s of allSolids) {
+        if (rectOverlap(mario, s)) {
+          resolvePlatformCollision(mario, s);
+        }
+      }
+
+      // Brick hit from below
+      for (const b of bricks) {
+        if (b.hit) continue;
+        if (mario.vy < 0 &&
+            mario.x+mario.w > b.x+4 && mario.x < b.x+b.w-4 &&
+            mario.y >= b.y+b.h-4 && mario.y < b.y+b.h+8) {
+          b.hit = true;
+          spawnParticles(b.x+TILE/2, b.y+TILE/2, C.brick, 8);
+          score += 50;
+          updateUI();
+        }
+      }
+
+      // Question block hit from below
+      for (const q of questionBlocks) {
+        if (q.hit) continue;
+        if (mario.vy < 0 &&
+            mario.x+mario.w > q.x+4 && mario.x < q.x+q.w-4 &&
+            mario.y >= q.y+q.h-4 && mario.y < q.y+q.h+8) {
+          q.hit = true;
+          // Spawn coin
+          coinObjs.push({ x: q.x+8, y: q.y-TILE, vy: -6, life: 60 });
+          score += 200; coins++;
+          spawnFloatingText(q.x+TILE/2, q.y-16, '+200', C.coin);
+          updateUI();
+        }
+      }
+
+      // Coin pickup
+      for (let i = coinObjs.length-1; i>=0; i--) {
+        const c = coinObjs[i];
+        if (rectOverlap(mario, {x:c.x, y:c.y, w:16, h:16})) {
+          score += 100; coins++;
+          spawnParticles(c.x+8, c.y+8, C.coin, 6);
+          coinObjs.splice(i,1);
+          updateUI();
+        }
+      }
+
+      // Goomba collision
+      for (const g of goombas) {
+        if (!g.alive || g.squished) continue;
+        if (rectOverlap(mario, {x:g.x+2, y:g.y, w:g.w-4, h:g.h})) {
+          const mBottom = mario.y + mario.h;
+          const gTop = g.y + 4;
+          if (mBottom < gTop + 12 && mario.vy > 0) {
+            // Stomp
+            g.squished = true;
+            g.squishTimer = 30;
+            mario.vy = JUMP_FORCE * 0.6;
+            score += 100;
+            spawnFloatingText(g.x+g.w/2, g.y-10, '100', '#fff');
+            updateUI();
+          } else {
+            killMario();
+            return;
+          }
+        }
+      }
+
+      // Fall into pit
+      if (mario.y > H + 100) killMario();
+
+      // Flag
+      if (!flagReached && mario.x + mario.w > flagX - 10 && mario.x < flagX + 30) {
+        flagReached = true;
+        score += 1000;
+        updateUI();
+        setTimeout(() => {
+          gameState = 'win';
+          showOverlay('YOU WIN! 🎉', `Score: ${String(score).padStart(6,'0')}`, 'PLAY AGAIN', startGame);
+        }, 1500);
+      }
+
+      // Camera
+      const targetCam = mario.x - W/3;
+      cameraX = Math.max(0, Math.min(WORLD_W - W, targetCam));
+
+      // Animation
+      mario.animTimer++;
+      if (mario.animTimer > 8) { mario.animFrame = (mario.animFrame+1)%4; mario.animTimer = 0; }
+    }
+
+    function killMario() {
+      mario.alive = false;
+      mario.deathTimer = 90;
+      mario.vy = JUMP_FORCE * 1.2;
+    }
+
+    function respawn() {
+      mario.x = 80; mario.y = GROUND - 48;
+      mario.vx = 0; mario.vy = 0;
+      mario.alive = true;
+      mario.onGround = false;
+      mario.deathTimer = 0;
+      cameraX = 0;
+      updateUI();
+    }
+
+    function updateGoombas() {
+      for (const g of goombas) {
+        if (!g.alive) continue;
+        if (g.squished) {
+          g.squishTimer--;
+          if (g.squishTimer <= 0) g.alive = false;
+          continue;
+        }
+        g.vy += GRAVITY;
+        g.x += g.vx;
+        g.y += g.vy;
+
+        const solids = [...platforms, ...pipes];
+        for (const s of solids) {
+          if (rectOverlap(g, s)) {
+            const overlapX = Math.min(g.x+g.w, s.x+s.w) - Math.max(g.x, s.x);
+            const overlapY = Math.min(g.y+g.h, s.y+s.h) - Math.max(g.y, s.y);
+            if (overlapY < overlapX) {
+              if (g.y+g.h/2 < s.y+s.h/2) { g.y = s.y - g.h; g.vy = 0; }
+              else { g.y = s.y + s.h; g.vy = 1; }
+            } else {
+              g.vx *= -1;
+              if (g.x+g.w/2 < s.x+s.w/2) g.x = s.x - g.w;
+              else g.x = s.x + s.w;
+            }
+          }
+        }
+        if (g.y > H + 64) g.alive = false;
+
+        g.animTimer++;
+        if (g.animTimer > 14) { g.animFrame = (g.animFrame+1)%2; g.animTimer=0; }
+      }
+    }
+
+    function updateCoins() {
+      for (let i = coinObjs.length-1; i>=0; i--) {
+        const c = coinObjs[i];
+        c.vy += 0.4;
+        c.y += c.vy;
+        c.life--;
+        if (c.life <= 0) coinObjs.splice(i,1);
+      }
+    }
+
+    function updateParticles() {
+      for (let i = particles.length-1; i>=0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.2;
+        p.life--;
+        if (p.life <= 0) particles.splice(i,1);
+      }
+    }
+
+    function updateFloatingTexts() {
+      for (let i = floatingTexts.length-1; i>=0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 1;
+        ft.life--;
+        if (ft.life <= 0) floatingTexts.splice(i,1);
+      }
+    }
+
+    // ─── DRAW ──────────────────────────────────────────────
+    function draw() {
+      // Sky
+      ctx.fillStyle = C.sky;
+      ctx.fillRect(0,0,W,H);
+
+      // Decorations (clouds, hills)
+      const clouds = [[200,60],[600,40],[1200,70],[1800,50],[2500,65],[3200,45],[3900,70]];
+      clouds.forEach(([cx,cy]) => drawCloud(cx, cy, cameraX));
+      const hills = [[100, GROUND, 120],[700, GROUND, 180],[1600,GROUND,140],[2300,GROUND,200],[3400,GROUND,160]];
+      hills.forEach(([hx,hy,s]) => drawHill(hx, hy, cameraX, s));
+
+      // Ground
+      for (const p of platforms) {
+        const rx = p.x - cameraX;
+        if (rx > W || rx + p.w < 0) continue;
+        ctx.fillStyle = C.ground;
+        ctx.fillRect(rx, p.y, p.w, p.h);
+        ctx.fillStyle = C.groundTop;
+        ctx.fillRect(rx, p.y, p.w, 8);
+      }
+
+      // Elevated platforms
+      for (const p of platforms) {
+        if (p.h >= 48) continue; // skip ground tiles
+        const rx = p.x - cameraX;
+        ctx.fillStyle = C.ground;
+        ctx.fillRect(rx, p.y, p.w, p.h);
+        ctx.fillStyle = C.groundTop;
+        ctx.fillRect(rx, p.y, p.w, 8);
+      }
+
+      // Pipes
+      for (const p of pipes) {
+        const rx = p.x - cameraX;
+        if (rx > W || rx + p.w < 0) continue;
+        drawPipe(p.x, p.y, p.w, p.h, cameraX);
+      }
+
+      // Bricks
+      for (const b of bricks) {
+        const rx = b.x - cameraX;
+        if (rx > W || rx + b.w < 0) continue;
+        if (!b.hit) drawBrick(rx, b.y);
+        else {
+          ctx.fillStyle = '#6B4C00';
+          ctx.fillRect(rx, b.y, TILE, TILE);
+        }
+      }
+
+      // Question blocks
+      for (const q of questionBlocks) {
+        const rx = q.x - cameraX;
+        if (rx > W || rx + q.w < 0) continue;
+        drawQuestion(rx, q.y, q.hit);
+      }
+
+      // Flag
+      drawFlag(cameraX);
+
+      // Coins
+      for (const c of coinObjs) {
+        const rx = c.x - cameraX;
+        ctx.fillStyle = C.coin;
+        ctx.fillRect(rx, c.y, 16, 16);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(rx+4, c.y+4, 8, 4);
+      }
+
+      // Goombas
+      for (const g of goombas) {
+        if (!g.alive) continue;
+        if (g.x - cameraX > W || g.x + g.w - cameraX < 0) continue;
+        drawGoomba(g, cameraX);
+      }
+
+      // Mario
+      if (mario.alive || mario.deathTimer > 0) {
+        const rx = mario.x - cameraX;
+        if (!mario.alive) {
+          // death bounce
+          ctx.globalAlpha = mario.deathTimer > 60 ? 1 : mario.deathTimer/60;
+        }
+        drawPixelMario(rx, mario.y, mario.facingRight, mario.running, mario.onGround, mario.animFrame);
+        ctx.globalAlpha = 1;
+      }
+
+      // Particles
+      for (const p of particles) {
+        ctx.globalAlpha = p.life / p.maxLife;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - cameraX - 3, p.y - 3, 6, 6);
+      }
+      ctx.globalAlpha = 1;
+
+      // Floating texts
+      ctx.font = '8px Press Start 2P';
+      for (const ft of floatingTexts) {
+        ctx.globalAlpha = ft.life / ft.maxLife;
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x - cameraX - ctx.measureText(ft.text).width/2, ft.y);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ─── GAME LOOP ─────────────────────────────────────────
+    let lastTime = 0;
+    function loop(ts) {
+      if (gameState !== 'playing') return;
+      const dt = ts - lastTime; lastTime = ts;
+
+      updateMario();
+      updateGoombas();
+      updateCoins();
+      updateParticles();
+      updateFloatingTexts();
+      draw();
+
+      requestAnimationFrame(loop);
+    }
+
+    function updateUI() {
+      document.getElementById('scoreDisplay').textContent = String(score).padStart(6,'0');
+      document.getElementById('coinsDisplay').textContent = '×' + String(coins).padStart(2,'0');
+      document.getElementById('livesDisplay').textContent = '×' + String(lives).padStart(2,'0');
+    }
+
+    function showOverlay(title, subtitle, btnText, btnAction) {
+      const ov = document.getElementById('overlay');
+      ov.innerHTML = `
+        <h1>${title}</h1>
+        <p>${subtitle}</p>
+        <button onclick="(${btnAction.toString()})()">${btnText}</button>
+      `;
+      ov.style.display = 'flex';
+    }
+
+    function startGame() {
+      score = 0; coins = 0; lives = 3; timeLeft = 300;
+      mario.x = 80; mario.y = GROUND-48;
+      mario.vx=0; mario.vy=0; mario.alive=true; mario.onGround=false; mario.deathTimer=0;
+      buildLevel();
+      updateUI();
+      document.getElementById('overlay').style.display = 'none';
+      gameState = 'playing';
+      if (timeTimer) clearInterval(timeTimer);
+      timeTimer = setInterval(() => {
+        if (gameState !== 'playing') return;
+        timeLeft = Math.max(0, timeLeft-1);
+        document.getElementById('timeDisplay').textContent = timeLeft;
+        if (timeLeft === 0) {
+          killMario();
+        }
+      }, 1000);
+      lastTime = performance.now();
+      requestAnimationFrame(loop);
+    }
+
+    // ─── CONTROLS ──────────────────────────────────────────
+    window.addEventListener('keydown', e => { keys[e.key] = true; e.preventDefault(); });
+    window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+    // Mobile controls
+    function addMobileBtn(label, keyName, x, y) {
+      // not needed for this version, arrow keys work
+    }
+</script>
+</body>
+</html>
