@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Sanjar's Blog — Coming Soon</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+        :root[data-theme="dark"] {
+          --bg: #0a0a0a;
+          --bg2: rgba(10,10,10,0.85);
+          --border: rgba(255,255,255,0.07);
+          --border-strong: rgba(255,255,255,0.16);
+          --text: #f0eeff;
+          --muted: #555;
+          --icon: #444;
+          --icon-hover: #fff;
+          --badge-bg: rgba(255,255,255,0.04);
+          --badge-border: rgba(255,255,255,0.09);
+          --badge-text: #666;
+          --dot: #fff;
+          --btn-bg: #fff;
+          --btn-text: #000;
+          --btn-hover: #ddd;
+          --ring-a: rgba(255,255,255,0.18);
+          --ring-b: rgba(255,255,255,0.07);
+        }
+
+        :root[data-theme="light"] {
+          --bg: #f7f6f2;
+          --bg2: rgba(247,246,242,0.88);
+          --border: rgba(0,0,0,0.07);
+          --border-strong: rgba(0,0,0,0.14);
+          --text: #0a0a0a;
+          --muted: #aaa;
+          --icon: #bbb;
+          --icon-hover: #000;
+          --badge-bg: rgba(0,0,0,0.04);
+          --badge-border: rgba(0,0,0,0.08);
+          --badge-text: #999;
+          --dot: #000;
+          --btn-bg: #0a0a0a;
+          --btn-text: #fff;
+          --btn-hover: #222;
+          --ring-a: rgba(0,0,0,0.12);
+          --ring-b: rgba(0,0,0,0.05);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+          min-height: 100vh;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'DM Sans', sans-serif;
+          overflow: hidden;
+          transition: background 0.45s, color 0.45s;
+        }
+
+        body::after {
+          content: '';
+          position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
+          background-size: 180px;
+        }
+
+        nav {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 20px 48px;
+          border-bottom: 1px solid var(--border);
+          background: var(--bg2);
+          backdrop-filter: blur(14px);
+          transition: background 0.45s, border-color 0.45s;
+        }
+
+        .nav-logo {
+          font-weight: 600; font-size: 0.95rem;
+          color: var(--text);
+          transition: color 0.45s;
+        }
+
+        .nav-right { display: flex; align-items: center; gap: 10px; }
+
+        .nav-channel {
+          text-decoration: none;
+          font-size: 0.82rem; font-weight: 600;
+          padding: 7px 20px; border-radius: 40px;
+          background: var(--btn-bg);
+          color: var(--btn-text);
+          transition: background 0.3s, color 0.3s, transform 0.2s;
+        }
+        .nav-channel:hover { background: var(--btn-hover); transform: translateY(-1px); }
+
+        .toggle {
+          width: 36px; height: 36px; border-radius: 50%;
+          border: 1px solid var(--border-strong);
+          background: transparent; color: var(--text);
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.85rem;
+          transition: all 0.25s;
+        }
+        .toggle:hover { background: var(--badge-bg); transform: rotate(18deg); }
+
+        .stage {
+          position: relative; z-index: 1;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          min-height: 100vh; text-align: center;
+          padding: 0 24px;
+        }
+
+        .avatar-wrap {
+          position: relative; width: 96px; height: 96px;
+          margin-bottom: 34px;
+          animation: popIn 0.75s cubic-bezier(.34,1.56,.64,1) both;
+        }
+
+        @keyframes popIn {
+          from { opacity:0; transform:scale(0.4); }
+          to   { opacity:1; transform:scale(1); }
+        }
+
+        .ring1 {
+          position: absolute; inset: -6px; border-radius: 50%;
+          border: 1px solid var(--ring-a);
+          animation: spin 10s linear infinite;
+          transition: border-color 0.45s;
+        }
+        .ring2 {
+          position: absolute; inset: -14px; border-radius: 50%;
+          border: 1px dashed var(--ring-b);
+          animation: spin 22s linear infinite reverse;
+          transition: border-color 0.45s;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .avatar-img {
+          position: relative; z-index: 1;
+          width: 96px; height: 96px; border-radius: 50%;
+          object-fit: cover; display: block;
+          border: 1.5px solid var(--border-strong);
+          background: var(--badge-bg);
+          transition: border-color 0.45s;
+        }
+        .avatar-init {
+          position: relative; z-index: 1;
+          width: 96px; height: 96px; border-radius: 50%;
+          background: var(--badge-bg);
+          border: 1.5px solid var(--border-strong);
+          display: flex; align-items: center; justify-content: center;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 2.1rem; font-weight: 700;
+          color: var(--text);
+          transition: all 0.45s;
+        }
+
+        .badge {
+          display: inline-flex; align-items: center; gap: 7px;
+          font-size: 0.67rem; font-weight: 600;
+          letter-spacing: 0.18em; text-transform: uppercase;
+          color: var(--badge-text);
+          border: 1px solid var(--badge-border);
+          background: var(--badge-bg);
+          padding: 5px 14px; border-radius: 40px;
+          margin-bottom: 22px;
+          animation: fadeUp 0.5s 0.2s ease both;
+          transition: all 0.45s;
+        }
+
+        .badge-dot {
+          width: 5px; height: 5px; border-radius: 50%;
+          background: var(--dot); opacity: 0.4;
+          animation: pulse 2.5s ease-in-out infinite;
+          transition: background 0.45s;
+        }
+        @keyframes pulse {
+          0%,100% { opacity:0.4; transform:scale(1); }
+          50%      { opacity:0.1; transform:scale(0.6); }
+        }
+
+        @keyframes fadeUp {
+          from { opacity:0; transform:translateY(14px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+
+        h1 {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(3rem, 9vw, 5.5rem);
+          font-weight: 700; line-height: 1.0;
+          color: var(--text);
+          margin-bottom: 16px;
+          animation: fadeUp 0.55s 0.3s ease both;
+          transition: color 0.45s;
+        }
+
+        .sub {
+          font-size: 0.96rem; color: var(--muted);
+          font-weight: 300; max-width: 320px;
+          line-height: 1.8; margin-bottom: 42px;
+          animation: fadeUp 0.55s 0.4s ease both;
+          transition: color 0.45s;
+        }
+
+        .socials {
+          display: flex; gap: 20px;
+          animation: fadeUp 0.55s 0.5s ease both;
+        }
+
+        .socials a {
+          color: var(--icon); font-size: 1.05rem;
+          text-decoration: none;
+          transition: color 0.2s, transform 0.2s;
+        }
+        .socials a:hover { color: var(--icon-hover); transform: translateY(-2px); }
+
+        footer {
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+          text-align: center; padding: 11px;
+          font-size: 0.7rem; color: var(--muted);
+          border-top: 1px solid var(--border);
+          background: var(--bg2);
+          backdrop-filter: blur(10px);
+          transition: all 0.45s;
+        }
+
+        .back-btn {
+          margin-top: 28px;
+          text-decoration: none;
+          font-size: 0.82rem; font-weight: 500;
+          letter-spacing: 0.04em;
+          color: var(--muted);
+          border: 1px solid var(--badge-border);
+          background: var(--badge-bg);
+          padding: 8px 18px; border-radius: 40px;
+          display: inline-flex; align-items: center; gap: 7px;
+          transition: all 0.22s;
+          animation: fadeUp 0.5s 0.6s ease both;
+        }
+        .back-btn:hover {
+          color: var(--text);
+          border-color: var(--border-strong);
+          transform: translateY(-2px);
+        }
+
+        @media (max-width: 500px) { nav { padding: 18px 20px; } }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Sanjar's Blog</span>
+    <div class="nav-right">
+        <button class="toggle" onclick="toggleTheme()" title="Toggle theme">
+            <i class="fas fa-sun" id="theme-icon"></i>
+        </button>
+        <a href="https://t.me/MrSanjarIsmailov" target="_blank" class="nav-channel">Channel</a>
+    </div>
+</nav>
+
+<div class="stage">
+
+    <div class="avatar-wrap">
+        <div class="ring1"></div>
+        <div class="ring2"></div>
+        <img src="me.webp" alt="Sanjar" class="avatar-img"
+             onerror="this.outerHTML='<div class=\'avatar-init\'>SI</div>'"/>
+    </div>
+
+    <div class="badge">
+        <span class="badge-dot"></span>
+        Coming soon
+    </div>
+
+    <h1>Something's<br/>cooking.</h1>
+
+    <p class="sub">Working on something worth your time.<br/>Check back soon.</p>
+
+    <a href="index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Home
+    </a>
+
+</div>
+
+<footer>© 2026 sanjar.uz</footer>
+
+<script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const icon = document.getElementById('theme-icon');
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+    }
+</script>
+</body>
+</html>
