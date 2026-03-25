@@ -1,190 +1,757 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Achievements</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #3a47d5, #00b2ff);
-            --card-bg: #0f0f0f;
-            --desc-bg: #181818;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Achievements</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #000;
-            color: #fff;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+  <style>
+    /* ─── TOKENS ──────────────────────────────────────────────── */
+    :root {
+      --bg:        #050608;
+      --surface:   #0c0d10;
+      --border:    rgba(255,255,255,.07);
+      --gold:      #c9a84c;
+      --gold-dim:  rgba(201,168,76,.15);
+      --gold-glow: rgba(201,168,76,.35);
+      --text:      #e8e6e0;
+      --muted:     #5a5850;
+      --font-serif: 'Playfair Display', Georgia, serif;
+      --font-mono:  'DM Mono', monospace;
+      --font-sans:  'DM Sans', sans-serif;
+      --ease:       cubic-bezier(.22,.68,0,1.2);
+    }
 
-        h1 {
-            font-size: clamp(24px, 5vw, 32px); /* Responsive font size */
-            margin: 20px 0 40px 0;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+    /* ─── RESET ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-        /* THE GRID SYSTEM */
-        .container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 25px;
-            width: 100%;
-            max-width: 1200px; /* Limits width on ultrawide monitors */
-        }
+    /* ─── NOISE OVERLAY ───────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: .6;
+    }
 
-        .item {
-            background: var(--card-bg);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid #222;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease;
-        }
+    /* ─── AMBIENT GLOW ────────────────────────────────────────── */
+    .ambient {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ambient-1 {
+      width: 600px; height: 600px;
+      background: rgba(201,168,76,.04);
+      top: -200px; left: -150px;
+    }
+    .ambient-2 {
+      width: 500px; height: 500px;
+      background: rgba(80,100,200,.05);
+      bottom: 10%; right: -100px;
+    }
 
-        .item:hover {
-            border-color: #3a47d5;
-        }
+    /* ─── WRAPPER ─────────────────────────────────────────────── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 28px 100px;
+    }
 
-        .img-container {
-            width: 100%;
-            aspect-ratio: 4 / 3; /* Keeps all images the same height */
-            overflow: hidden;
-            border-radius: 12px;
-        }
+    /* ─── HEADER ──────────────────────────────────────────────── */
+    header {
+      padding: 72px 0 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0;
+      animation: fadeUp .7s var(--ease) .1s forwards;
+    }
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: clamp(44px, 7vw, 88px);
+      font-weight: 900;
+      line-height: .95;
+      letter-spacing: -.02em;
+      opacity: 0;
+      animation: fadeUp .8s var(--ease) .25s forwards;
+    }
+    .page-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+    .title-rule {
+      margin-top: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--gold) 0%, transparent 55%);
+      opacity: 0;
+      animation: scaleX .9s var(--ease) .45s forwards;
+      transform-origin: left;
+      transform: scaleX(0);
+    }
+    .subtitle {
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      letter-spacing: .08em;
+      opacity: 0;
+      animation: fadeUp .7s var(--ease) .55s forwards;
+    }
 
-        .item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* Crops image to fill container without stretching */
-            display: block;
-        }
+    /* ─── COUNTER BAR ─────────────────────────────────────────── */
+    .counter-bar {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-bottom: 56px;
+      opacity: 0;
+      animation: fadeUp .7s var(--ease) .65s forwards;
+    }
+    .counter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .counter-num {
+      font-family: var(--font-serif);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .counter-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .counter-divider {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+    }
 
-        .desc {
-            margin-top: 15px;
-            background: var(--desc-bg);
-            padding: 15px;
-            border-radius: 12px;
-            border-left: 4px solid #3a47d5;
-            font-size: 16px;
-            color: #e0e0e0;
-            line-height: 1.4;
-            font-weight: 500;
-            flex-grow: 1; /* Ensures buttons align even if text length differs */
-            display: flex;
-            align-items: center;
-        }
+    /* ─── FILTER TABS ─────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 44px;
+      opacity: 0;
+      animation: fadeUp .7s var(--ease) .75s forwards;
+    }
+    .filter-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 8px 18px;
+      border-radius: 40px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .25s ease;
+    }
+    .filter-btn:hover,
+    .filter-btn.active {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: var(--gold-dim);
+    }
 
-        .download-btn {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 15px;
-            padding: 14px;
-            background: var(--primary-gradient);
-            color: #fff;
-            font-size: 15px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: 0.25s;
-        }
+    /* ─── GRID ────────────────────────────────────────────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 2px;
+    }
 
-        .download-btn:hover {
-            filter: brightness(1.2);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 150, 255, 0.4);
-        }
+    /* ─── CARD ────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity .5s ease, transform .5s ease;
+    }
+    .card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .card:nth-child(1) { transition-delay: .05s; }
+    .card:nth-child(2) { transition-delay: .10s; }
+    .card:nth-child(3) { transition-delay: .15s; }
+    .card:nth-child(4) { transition-delay: .20s; }
+    .card:nth-child(5) { transition-delay: .25s; }
+    .card:nth-child(6) { transition-delay: .30s; }
 
-        /* Tablet/Phone Adjustments */
-        @media (max-width: 480px) {
-            body { padding: 15px; }
-            .container {
-                grid-template-columns: 1fr; /* Force 1 column on small phones */
-            }
-            .item { padding: 12px; }
-        }
-    </style>
+    /* corner accent */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 48px; height: 48px;
+      background: linear-gradient(225deg, var(--gold) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity .4s ease;
+      z-index: 2;
+    }
+    .card:hover::before { opacity: .35; }
+
+    /* shine sweep */
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(130deg, transparent 40%, rgba(255,255,255,.03) 50%, transparent 60%);
+      transform: translateX(-100%);
+      transition: transform .6s ease;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .card:hover::after { transform: translateX(100%); }
+
+    /* IMAGE */
+    .card-img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      overflow: hidden;
+      position: relative;
+    }
+    .card-img img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .7s ease, filter .4s ease;
+      filter: brightness(.85) saturate(.9);
+    }
+    .card:hover .card-img img {
+      transform: scale(1.05);
+      filter: brightness(.95) saturate(1.05);
+    }
+    .card-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, var(--surface) 0%, transparent 40%);
+    }
+
+    /* INDEX BADGE */
+    .card-index {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .18em;
+      color: var(--gold);
+      background: rgba(5,6,8,.7);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(201,168,76,.25);
+      padding: 5px 10px;
+      border-radius: 4px;
+      z-index: 3;
+    }
+
+    /* BODY */
+    .card-body {
+      padding: 22px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .card-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .card-title {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text);
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+    .card-meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: .1em;
+    }
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--gold);
+      padding: 10px 18px;
+      border-radius: 3px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all .25s ease;
+      white-space: nowrap;
+    }
+    .dl-btn:hover {
+      background: #e0bc66;
+      box-shadow: 0 0 20px var(--gold-glow);
+      transform: translateY(-1px);
+    }
+    .dl-btn i { font-size: 9px; }
+
+    /* ─── LIGHTBOX ────────────────────────────────────────────── */
+    .lb-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,6,8,.96);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s ease;
+      backdrop-filter: blur(12px);
+    }
+    .lb-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .lb-inner {
+      position: relative;
+      max-width: 88vw;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      transform: scale(.92);
+      transition: transform .35s var(--ease);
+    }
+    .lb-backdrop.open .lb-inner { transform: scale(1); }
+    .lb-inner img {
+      max-width: 100%;
+      max-height: 72vh;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 0 80px rgba(0,0,0,.8), 0 0 0 1px var(--border);
+    }
+    .lb-caption {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+    }
+    .lb-close {
+      position: absolute;
+      top: -48px; right: -4px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all .2s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lb-close:hover { border-color: var(--gold); color: var(--gold); }
+    .lb-nav {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      background: rgba(5,6,8,.7);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all .2s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lb-nav:hover { border-color: var(--gold); color: var(--gold); }
+    .lb-prev { left: -68px; }
+    .lb-next { right: -68px; }
+
+    /* ─── FOOTER ──────────────────────────────────────────────── */
+    footer {
+      margin-top: 80px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    footer span {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .footer-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .footer-dots span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      letter-spacing: 0;
+    }
+    .footer-dots span.active { background: var(--gold); }
+
+    /* ─── KEYFRAMES ───────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleX {
+      from { opacity: 0; transform: scaleX(0); }
+      to   { opacity: 1; transform: scaleX(1); }
+    }
+
+    /* ─── RESPONSIVE ──────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .wrapper { padding: 0 16px 60px; }
+      header { padding: 48px 0 40px; }
+      .grid { grid-template-columns: 1fr; gap: 2px; }
+      .counter-bar { gap: 20px; }
+      .lb-prev { left: -14px; }
+      .lb-next { right: -14px; }
+      .lb-inner { max-width: 96vw; }
+    }
+  </style>
 </head>
 <body>
 
-<h1>My Achievements</h1>
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
 
-<div class="container">
-    <!-- Item 1 -->
-    <div class="item">
-        <div class="img-container">
-            <img src="pdp-cpp.jpg" alt="C++">
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <p class="eyebrow">Portfolio — Certifications & Credentials</p>
+    <h1 class="page-title">My <em>Achievements</em></h1>
+    <div class="title-rule"></div>
+    <p class="subtitle">// 06 certificates &nbsp;·&nbsp; verified credentials &nbsp;·&nbsp; 2023–2024</p>
+  </header>
+
+  <!-- COUNTERS -->
+  <div class="counter-bar">
+    <div class="counter-item">
+      <span class="counter-num" data-count="6">0</span>
+      <span class="counter-label">Certificates</span>
+    </div>
+    <div class="counter-divider"></div>
+    <div class="counter-item">
+      <span class="counter-num" data-count="3">0</span>
+      <span class="counter-label">Languages</span>
+    </div>
+    <div class="counter-divider"></div>
+    <div class="counter-item">
+      <span class="counter-num" data-count="2">0</span>
+      <span class="counter-label">Academies</span>
+    </div>
+    <div class="counter-divider"></div>
+    <div class="counter-item">
+      <span class="counter-num" data-count="1">0</span>
+      <span class="counter-label">Security Cert</span>
+    </div>
+  </div>
+
+  <!-- FILTER -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="backend">Backend</button>
+    <button class="filter-btn" data-filter="security">Security</button>
+    <button class="filter-btn" data-filter="red">RED Series</button>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid" id="grid">
+
+    <div class="card" data-category="backend" data-index="0">
+      <div class="card-img">
+        <img src="pdp-cpp.jpg" alt="C++ Certificate" />
+        <div class="card-img-overlay"></div>
+        <span class="card-index">01 / 06</span>
+      </div>
+      <div class="card-body">
+        <span class="card-tag">Backend · C++</span>
+        <p class="card-title">C++ Backend Development &amp; Foundation</p>
+        <div class="card-footer">
+          <span class="card-meta">PDP Academy</span>
+          <a class="dl-btn" href="pdp-cpp.jpg" download>
+            <i class="fa-solid fa-arrow-down"></i> Download
+          </a>
         </div>
-        <div class="desc">C++ Backend Development & Foundation</div>
-        <a class="download-btn" href="pdp-cpp.jpg" download>
-            <i class="fa-solid fa-download"></i> Download Certificate
-        </a>
+      </div>
     </div>
 
-    <!-- Item 2 -->
-    <div class="item">
-        <div class="img-container">
-            <img src="pdp-java.jpg" alt="Java">
+    <div class="card" data-category="backend" data-index="1">
+      <div class="card-img">
+        <img src="pdp-java.jpg" alt="Java Certificate" />
+        <div class="card-img-overlay"></div>
+        <span class="card-index">02 / 06</span>
+      </div>
+      <div class="card-body">
+        <span class="card-tag">Backend · Java</span>
+        <p class="card-title">Java Backend Development</p>
+        <div class="card-footer">
+          <span class="card-meta">PDP Academy</span>
+          <a class="dl-btn" href="pdp-java.jpg" download>
+            <i class="fa-solid fa-arrow-down"></i> Download
+          </a>
         </div>
-        <div class="desc">Java Backend Development</div>
-        <a class="download-btn" href="pdp-java.jpg" download>
-            <i class="fa-solid fa-download"></i> Download Certificate
-        </a>
+      </div>
     </div>
 
-    <!-- Item 3 -->
-    <div class="item">
-        <div class="img-container">
-            <img src="najottalim-python.jpg" alt="Python">
+    <div class="card" data-category="backend" data-index="2">
+      <div class="card-img">
+        <img src="najottalim-python.jpg" alt="Python Certificate" />
+        <div class="card-img-overlay"></div>
+        <span class="card-index">03 / 06</span>
+      </div>
+      <div class="card-body">
+        <span class="card-tag">Backend · Python</span>
+        <p class="card-title">Python Backend Development</p>
+        <div class="card-footer">
+          <span class="card-meta">Najot Ta'lim</span>
+          <a class="dl-btn" href="najottalim-python.jpg" download>
+            <i class="fa-solid fa-arrow-down"></i> Download
+          </a>
         </div>
-        <div class="desc">Python Backend Development</div>
-        <a class="download-btn" href="najottalim-python.jpg" download>
-            <i class="fa-solid fa-download"></i> Download Certificate
-        </a>
+      </div>
     </div>
 
-    <!-- Item 4 -->
-    <div class="item">
-        <div class="img-container">
-            <img src="red-0.jpg" alt="red0">
+    <div class="card" data-category="red" data-index="3">
+      <div class="card-img">
+        <img src="red-0.jpg" alt="RED-0 Certificate" />
+        <div class="card-img-overlay"></div>
+        <span class="card-index">04 / 06</span>
+      </div>
+      <div class="card-body">
+        <span class="card-tag">RED Series · Level 0</span>
+        <p class="card-title">RED-0 Certification</p>
+        <div class="card-footer">
+          <span class="card-meta">RED Programme</span>
+          <a class="dl-btn" href="red-0.jpg" download>
+            <i class="fa-solid fa-arrow-down"></i> Download
+          </a>
         </div>
-        <div class="desc">RED-0</div>
-        <a class="download-btn" href="red-0.jpg" download>
-            <i class="fa-solid fa-download"></i> Download Certificate
-        </a>
+      </div>
     </div>
 
-    <div class="item">
-        <div class="img-container">
-            <img src="red-1.jpg" alt="red1">
+    <div class="card" data-category="red" data-index="4">
+      <div class="card-img">
+        <img src="red-1.jpg" alt="RED-1 Certificate" />
+        <div class="card-img-overlay"></div>
+        <span class="card-index">05 / 06</span>
+      </div>
+      <div class="card-body">
+        <span class="card-tag">RED Series · Level 1</span>
+        <p class="card-title">RED-1 Certification</p>
+        <div class="card-footer">
+          <span class="card-meta">RED Programme</span>
+          <a class="dl-btn" href="red-1.jpg" download>
+            <i class="fa-solid fa-arrow-down"></i> Download
+          </a>
         </div>
-        <div class="desc">RED-1</div>
-        <a class="download-btn" href="red-1.jpg" download>
-            <i class="fa-solid fa-download"></i> Download Certificate
-        </a>
+      </div>
     </div>
 
-    <!-- Item 5 -->
-    <div class="item">
-        <div class="img-container">
-            <img src="crta.png" alt="CRTA">
+    <div class="card" data-category="security" data-index="5">
+      <div class="card-img">
+        <img src="crta.png" alt="CRTA Certificate" />
+        <div class="card-img-overlay"></div>
+        <span class="card-index">06 / 06</span>
+      </div>
+      <div class="card-body">
+        <span class="card-tag">Security · Red Team</span>
+        <p class="card-title">CRTA Certified Red Team Analyst</p>
+        <div class="card-footer">
+          <span class="card-meta">Certified · Active</span>
+          <a class="dl-btn" href="crta.png" download>
+            <i class="fa-solid fa-arrow-down"></i> Download
+          </a>
         </div>
-        <div class="desc">CRTA Certified</div>
-        <a class="download-btn" href="crta.png" download>
-            <i class="fa-solid fa-download"></i> Download Certificate
-        </a>
+      </div>
     </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>© 2024 — All rights reserved</span>
+    <div class="footer-dots">
+      <span class="active"></span>
+      <span></span>
+      <span></span>
+    </div>
+    <span>Verified &amp; Authenticated</span>
+  </footer>
+
 </div>
 
+<!-- LIGHTBOX -->
+<div class="lb-backdrop" id="lb">
+  <div class="lb-inner">
+    <button class="lb-close" id="lb-close"><i class="fa-solid fa-xmark"></i></button>
+    <button class="lb-nav lb-prev" id="lb-prev"><i class="fa-solid fa-chevron-left"></i></button>
+    <button class="lb-nav lb-next" id="lb-next"><i class="fa-solid fa-chevron-right"></i></button>
+    <img id="lb-img" src="" alt="" />
+    <p class="lb-caption" id="lb-caption"></p>
+  </div>
+</div>
+
+<script>
+  /* ── INTERSECTION OBSERVER: card reveal ────────────────── */
+  const cards = document.querySelectorAll('.card');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  cards.forEach(c => io.observe(c));
+
+  /* ── COUNTER ANIMATION ─────────────────────────────────── */
+  const counterEls = document.querySelectorAll('[data-count]');
+  const cio = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const target = +el.dataset.count;
+      let n = 0;
+      const step = () => {
+        n++;
+        el.textContent = String(n).padStart(2, '0');
+        if (n < target) requestAnimationFrame(step);
+      };
+      setTimeout(step, 800);
+      cio.unobserve(el);
+    });
+  }, { threshold: 1 });
+  counterEls.forEach(el => cio.observe(el));
+
+  /* ── FILTER ─────────────────────────────────────────────── */
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.filter;
+      cards.forEach(card => {
+        const match = f === 'all' || card.dataset.category === f;
+        card.style.display = match ? '' : 'none';
+      });
+    });
+  });
+
+  /* ── LIGHTBOX ───────────────────────────────────────────── */
+  const lb      = document.getElementById('lb');
+  const lbImg   = document.getElementById('lb-img');
+  const lbCap   = document.getElementById('lb-caption');
+  const lbClose = document.getElementById('lb-close');
+  const lbPrev  = document.getElementById('lb-prev');
+  const lbNext  = document.getElementById('lb-next');
+
+  let currentIdx = 0;
+
+  function getVisible() {
+    return [...cards].filter(c => c.style.display !== 'none');
+  }
+
+  function openLb(idx) {
+    const visible = getVisible();
+    currentIdx = idx;
+    const card = visible[idx];
+    lbImg.src  = card.querySelector('img').src;
+    lbImg.alt  = card.querySelector('img').alt;
+    lbCap.textContent = card.querySelector('.card-title').textContent;
+    lb.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLb() {
+    lb.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function navigate(dir) {
+    const visible = getVisible();
+    currentIdx = (currentIdx + dir + visible.length) % visible.length;
+    openLb(currentIdx);
+  }
+
+  // click on image area opens lightbox
+  cards.forEach((card, i) => {
+    card.querySelector('.card-img').addEventListener('click', () => {
+      const visible = getVisible();
+      const idx = visible.indexOf(card);
+      if (idx !== -1) openLb(idx);
+    });
+  });
+
+  lbClose.addEventListener('click', closeLb);
+  lbPrev.addEventListener('click', () => navigate(-1));
+  lbNext.addEventListener('click', () => navigate(1));
+  lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+
+  document.addEventListener('keydown', e => {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape')      closeLb();
+    if (e.key === 'ArrowLeft')   navigate(-1);
+    if (e.key === 'ArrowRight')  navigate(1);
+  });
+</script>
 </body>
 </html>
