@@ -30,8 +30,6 @@
           min-height:100vh;
         }
 
-
-
         /* PROFILE HEADER */
         .profile-header{
           background:#1e1e1e;
@@ -51,26 +49,31 @@
         .avatar-wrap{
           position:relative;
           flex-shrink:0;
+          width:90px;
+          height:90px;
         }
-        .avatar{
-          width:90px;height:90px;
+        /* FIX: avatar-placeholder now just a container; image fills it */
+        .avatar-placeholder{
+          width:90px;
+          height:90px;
           border-radius:3px;
           background:#2a2a2a;
-          object-fit:cover;
-          display:block;
           border:2px solid var(--border);
-        }
-        .avatar-placeholder{
-          width:90px;height:90px;
-          border-radius:3px;
-          background:linear-gradient(135deg,#2a2a2a,#1a1a1a);
-          border:2px solid var(--border);
+          overflow:hidden;
           display:flex;
           align-items:center;
           justify-content:center;
           font-size:28px;
           font-weight:700;
           color:var(--orange);
+        }
+        /* FIX: image inside placeholder fills the container properly */
+        .avatar-placeholder img{
+          width:100%;
+          height:100%;
+          object-fit:cover;
+          display:block;
+          border-radius:0; /* parent handles radius */
         }
         .online-badge{
           position:absolute;
@@ -79,6 +82,7 @@
           border-radius:50%;
           background:var(--green);
           border:2px solid #1e1e1e;
+          z-index:1;
         }
         .profile-info{
           flex:1;
@@ -103,6 +107,7 @@
         .profile-meta{
           display:flex;
           gap:16px;
+          flex-wrap:wrap;
         }
         .meta-tag{
           background:#2a2a2a;
@@ -137,7 +142,9 @@
           text-transform:uppercase;
           letter-spacing:.5px;
           transition:color .15s;
+          user-select:none;
         }
+        .tab:hover{color:var(--text);}
         .tab.active{
           color:var(--orange);
           border-bottom-color:var(--orange);
@@ -160,7 +167,9 @@
           border:1px solid var(--border);
           border-radius:2px;
           margin-bottom:12px;
+          overflow:hidden; /* FIX: prevents child borders from bleeding */
         }
+        .panel:last-child{margin-bottom:0;}
         .panel-head{
           padding:10px 14px;
           border-bottom:1px solid var(--border2);
@@ -184,7 +193,9 @@
           text-decoration:none;
           color:var(--text);
           transition:background .12s;
+          cursor:default; /* FIX: default cursor for non-link rows */
         }
+        a.account-row{cursor:pointer;}
         .account-row:last-child{border-bottom:none;}
         .account-row:hover{background:#2a2a2a;}
         .acc-icon{
@@ -194,9 +205,22 @@
           flex-shrink:0;
         }
         .acc-icon svg{width:18px;height:18px;}
-        .acc-info{flex:1;}
+        .acc-info{flex:1;min-width:0;} /* FIX: min-width:0 prevents overflow */
         .acc-platform{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;}
-        .acc-value{font-size:13px;font-weight:600;}
+        .acc-value{
+          font-size:13px;
+          font-weight:600;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis; /* FIX: truncate long trade link text */
+        }
+        /* FIX: trade link value gets smaller mono font */
+        .acc-value.mono{
+          font-family:'Roboto Mono',monospace;
+          font-size:10px;
+          color:var(--muted);
+          font-weight:400;
+        }
         .acc-action{
           font-size:10px;
           color:var(--dim);
@@ -210,6 +234,7 @@
           transition:color .15s, border-color .15s;
           text-decoration:none;
           white-space:nowrap;
+          flex-shrink:0; /* FIX: buttons don't shrink */
         }
         .acc-action:hover{color:var(--text);border-color:var(--dim);}
         .acc-action.done{color:var(--green);border-color:#3a4a3a;}
@@ -217,7 +242,6 @@
         /* CS2 SETTINGS */
         .settings-grid{
           display:grid;
-          gap:0;
         }
         .setting-row{
           display:flex;
@@ -255,26 +279,69 @@
           background:#111;
           border:1px solid var(--border);
           border-radius:2px;
-          display:flex;align-items:center;justify-content:center;
+          display:flex;
+          align-items:center;
+          justify-content:center;
           position:relative;
         }
-        .ch-h{position:absolute;height:2px;background:#fff;left:50%;transform:translateX(-50%);width:6px;margin-left:-5px;}
-        .ch-h2{position:absolute;height:2px;background:#fff;left:50%;transform:translateX(-50%);width:6px;margin-left:5px;}
-        .ch-v{position:absolute;width:2px;background:#fff;top:50%;transform:translateY(-50%);height:6px;margin-top:-5px;}
-        .ch-v2{position:absolute;width:2px;background:#fff;top:50%;transform:translateY(-50%);height:6px;margin-top:5px;}
+        /* FIX: proper crosshair rendering using a single centered container */
+        .crosshair-inner{
+          position:relative;
+          width:24px;
+          height:24px;
+        }
+        /* Horizontal left bar */
+        .ch-h{
+          position:absolute;
+          height:2px;
+          background:#fff;
+          width:6px;
+          top:50%;
+          right:calc(50% + 2px); /* gap -4 means bars are 2px from center */
+          transform:translateY(-50%);
+        }
+        /* Horizontal right bar */
+        .ch-h2{
+          position:absolute;
+          height:2px;
+          background:#fff;
+          width:6px;
+          top:50%;
+          left:calc(50% + 2px);
+          transform:translateY(-50%);
+        }
+        /* Vertical top bar */
+        .ch-v{
+          position:absolute;
+          width:2px;
+          background:#fff;
+          height:6px;
+          left:50%;
+          bottom:calc(50% + 2px);
+          transform:translateX(-50%);
+        }
+        /* Vertical bottom bar */
+        .ch-v2{
+          position:absolute;
+          width:2px;
+          background:#fff;
+          height:6px;
+          left:50%;
+          top:calc(50% + 2px);
+          transform:translateX(-50%);
+        }
         .crosshair-code{
           font-family:'Roboto Mono',monospace;
           font-size:9px;
           color:var(--dim);
           text-align:center;
-          line-height:1.5;
+          line-height:1.6;
           word-break:break-all;
         }
 
         /* COMMANDS SECTION */
-        .cmd-section{margin-bottom:0;}
         .cmd-category{
-          padding:8px 14px 4px;
+          padding:7px 14px;
           font-size:10px;
           color:var(--orange);
           font-weight:700;
@@ -305,9 +372,6 @@
           text-align:right;
         }
 
-        /* SIDEBAR */
-        .sidebar{}
-
         /* TOAST */
         #toast{
           position:fixed;bottom:24px;left:50%;
@@ -318,12 +382,18 @@
           padding:8px 20px;border-radius:2px;
           opacity:0;pointer-events:none;z-index:999;
           transition:opacity .2s,transform .2s;
+          white-space:nowrap;
         }
         #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
         @media(max-width:720px){
           .main{grid-template-columns:1fr;}
           .sidebar{order:-1;}
+        }
+        @media(max-width:480px){
+          .profile-nick{font-size:20px;}
+          .profile-header-inner{padding:20px 16px 0;}
+          .main{padding:16px;}
         }
     </style>
 </head>
@@ -332,8 +402,12 @@
 <div class="profile-header">
     <div class="profile-header-inner">
         <div class="profile-top">
-            <div class="avatar-placeholder">
-                  <img src="avatar.jpg" alt="Profile Photo" style="width:100%; height:100%; border-radius:3px;">
+            <!-- FIX: avatar-wrap holds badge; placeholder holds image properly -->
+            <div class="avatar-wrap">
+                <div class="avatar-placeholder">
+                    <img src="avatar.jpg" alt="sanj1k avatar" onerror="this.parentElement.textContent='S'"/>
+                </div>
+                <div class="online-badge"></div>
             </div>
             <div class="profile-info">
                 <div class="profile-nick">sanj1k</div>
@@ -355,7 +429,7 @@
     </div>
 </div>
 
-<div id="toast">Copied to clipboard</div>
+<div id="toast">Copied to clipboard ✓</div>
 
 <div class="main">
     <div class="left-col">
@@ -364,9 +438,9 @@
         <div class="panel">
             <div class="panel-head">Linked Accounts</div>
 
-            <a class="account-row" href="https://steamcommunity.com/id/sanj1k" target="_blank" rel="noopener">
+            <a class="account-row" href="https://steamcommunity.com/id/sanj1k" target="_blank" rel="noopener noreferrer">
                 <div class="acc-icon" style="background:#1b2838;">
-                    <svg viewBox="0 0 24 24" fill="#c6d4df"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.623 3.872 10.328 9.092 11.63L14.12 12h-.058a4.964 4.964 0 0 0 .938-2.933 4.97 4.97 0 0 0-4.97-4.97 4.97 4.97 0 0 0-4.97 4.97c0 .612.112 1.196.314 1.737L.728 13.815C.254 13.24 0 12.636 0 12 0 5.373 5.373 0 12 0zm7.29 16.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zm-9.04-4.53a3.48 3.48 0 0 1-3.48 3.48 3.48 3.48 0 0 1-3.48-3.48 3.48 3.48 0 0 1 3.48-3.48 3.48 3.48 0 0 1 3.48 3.48z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="#c6d4df"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.624 0 11.99-5.365 11.99-11.988C23.97 5.362 18.603 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.522.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012zM17.513 9.533c0-1.662-1.351-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.664 0 3.015-1.35 3.015-3.015zm-5.273.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/></svg>
                 </div>
                 <div class="acc-info">
                     <div class="acc-platform">Steam</div>
@@ -375,6 +449,7 @@
                 <span class="acc-action">Visit →</span>
             </a>
 
+            <!-- FIX: non-link rows use <div>, not <a> -->
             <div class="account-row">
                 <div class="acc-icon" style="background:#1a1a2e;">
                     <svg viewBox="0 0 24 24" fill="#d13639"><path d="M0 1.168l2.54 16.478L9.375 19.5v-2.953l-4.41-.959L3.47 7.031h9.063V4.078H3.086L2.705 1.168H0zm8.297 9.89h7.57l-.453 5.024-3.289.885-3.289-.885-.214-2.39H6.41l.39 4.418 5.434 1.497 5.432-1.497.764-8.546H8.506l-.21-2.344h10.476l.207-2.953H5.879l.418 6.79z"/></svg>
@@ -387,17 +462,19 @@
             </div>
 
             <div class="account-row">
-                <div class="acc-icon" style="background:#1a1a1a;">
-                    <svg viewBox="0 0 24 24" fill="#888"><path d="M21 7l-9-5-9 5v10l9 5 9-5V7zm-9 13l-7-3.89V9l7 3.89V20zm1-12.27L6.06 7l6.94-3.85L19.94 7 13 10.73zm6 8.38L14 20v-7.11l6-3.34v6.56z"/></svg>
+                <div class="acc-icon" style="background:#1e2a3a;">
+                    <!-- FIX: better trade icon -->
+                    <svg viewBox="0 0 24 24" fill="#4b9fd4"><path d="M7 4v2H4v13h16V6h-3V4H7zm0 2h10v11H7V6zM9 9v2h6V9H9zm0 4v2h6v-2H9z"/></svg>
                 </div>
                 <div class="acc-info">
                     <div class="acc-platform">Steam Trade Link</div>
-                    <div class="acc-value" style="font-size:11px;color:var(--muted);font-family:'Roboto Mono',monospace;font-weight:400;">partner=778967474&token=77mPlRxl</div>
+                    <!-- FIX: mono class for styled trade link display -->
+                    <div class="acc-value mono">partner=778967474&amp;token=77mPlRxl</div>
                 </div>
                 <button class="acc-action" id="copyTrade" onclick="copy('https://steamcommunity.com/tradeoffer/new/?partner=778967474&token=77mPlRxl','copyTrade')">Copy</button>
             </div>
 
-            <a class="account-row" href="https://www.chess.com/member/chilluzbek" target="_blank" rel="noopener">
+            <a class="account-row" href="https://www.chess.com/member/chilluzbek" target="_blank" rel="noopener noreferrer">
                 <div class="acc-icon" style="background:#2a2a2a;">
                     <svg viewBox="0 0 24 24" fill="#7fa650"><path d="M9.5 2a2.5 2.5 0 0 0 0 5c.17 0 .34-.018.5-.05V8H7l-1 4h12l-1-4h-3V6.95a2.5 2.5 0 1 0-4.5-4.95zM12 4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1zm-7 9h14l1 2H4l1-2zm-1 4h16l-1 3H5l-1-3z"/></svg>
                 </div>
@@ -418,7 +495,7 @@
                     <span class="setting-val highlight">2.3</span>
                 </div>
                 <div class="setting-row">
-                    <span class="setting-label">DPI (assumed)</span>
+                    <span class="setting-label">DPI</span>
                     <span class="setting-val">—</span>
                 </div>
                 <div class="setting-row">
@@ -549,19 +626,22 @@
         <div class="panel">
             <div class="panel-head">Crosshair</div>
             <div class="crosshair-box">
+                <!-- FIX: proper crosshair preview with centered inner element -->
                 <div class="crosshair-preview">
-                    <div class="ch-h"></div>
-                    <div class="ch-h2"></div>
-                    <div class="ch-v"></div>
-                    <div class="ch-v2"></div>
+                    <div class="crosshair-inner">
+                        <div class="ch-h"></div>
+                        <div class="ch-h2"></div>
+                        <div class="ch-v"></div>
+                        <div class="ch-v2"></div>
+                    </div>
                 </div>
-                <div class="crosshair-code">Style 4 · Size 1 · Gap -4<br>Thickness 1 · No dot · White</div>
+                <div class="crosshair-code">Style 4 · Size 1 · Gap −4<br>Thickness 1 · No dot · White</div>
                 <button class="acc-action" style="width:100%;text-align:center;" id="copyCH"
                         onclick="copy('cl_crosshairstyle 4; cl_crosshairsize 1; cl_crosshairthickness 1; cl_crosshairgap -4; cl_crosshairdot false; cl_crosshair_t false; cl_crosshairalpha 255; cl_crosshaircolor 4; cl_crosshaircolor_r 255; cl_crosshaircolor_g 255; cl_crosshaircolor_b 255; cl_crosshair_drawoutline false; cl_crosshair_recoil false; cl_crosshairusealpha true','copyCH')">Copy Crosshair Commands</button>
             </div>
         </div>
 
-        <!-- Quick stats -->
+        <!-- Quick Info -->
         <div class="panel">
             <div class="panel-head">Quick Info</div>
             <div class="settings-grid">
@@ -596,37 +676,74 @@
 </div>
 
 <script>
+    // Toast notification
     const toast = document.getElementById('toast');
-    let tt;
-    function showToast(){
-      clearTimeout(tt);
-      toast.classList.add('show');
-      tt = setTimeout(()=>toast.classList.remove('show'), 2000);
+    let toastTimer;
+
+    function showToast() {
+        clearTimeout(toastTimer);
+        toast.classList.add('show');
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
     }
-    function copy(text, btnId){
-      navigator.clipboard.writeText(text).then(()=>{
+
+    // FIX: robust copy function with fallback for older browsers
+    function copy(text, btnId) {
         const btn = document.getElementById(btnId);
-        if(btn){ const orig=btn.textContent; btn.textContent='Copied!'; btn.classList.add('done'); setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('done');},2000); }
-        showToast();
-      });
+
+        const onSuccess = () => {
+            if (btn) {
+                const orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('done');
+                setTimeout(() => {
+                    btn.textContent = orig;
+                    btn.classList.remove('done');
+                }, 2000);
+            }
+            showToast();
+        };
+
+        const onFail = () => {
+            // Fallback: create temporary textarea
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand('copy');
+                onSuccess();
+            } catch (e) {
+                console.warn('Copy failed:', e);
+            }
+            document.body.removeChild(ta);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+        } else {
+            onFail();
+        }
     }
-    function copyAllCmds(){
-      const cmds = [
-        'cl_crosshairstyle 4','cl_crosshairsize 1','cl_crosshairthickness 1','cl_crosshairgap -4',
-        'cl_crosshairdot false','cl_crosshair_t false','cl_crosshairalpha 255','cl_crosshaircolor 4',
-        'cl_crosshaircolor_r 255','cl_crosshaircolor_g 255','cl_crosshaircolor_b 255',
-        'cl_crosshair_drawoutline false','cl_crosshair_recoil false','cl_crosshairusealpha true',
-        'viewmodel_fov 68','viewmodel_offset_x 2.5','viewmodel_offset_y 0','viewmodel_offset_z -1.5','viewmodel_presetpos 3',
-        'sensitivity 2.3','m_pitch 0.022','m_yaw 0.022','zoom_sensitivity_ratio 1',
-        'hud_scaling 1','cl_hud_color 9','cl_hud_radar_scale 0.91','cl_radar_scale 0.4',
-        'cl_radar_always_centered true','cl_radar_rotate true','cl_showfps 1','cl_showloadout true',
-        'volume 0.5','snd_mixahead 0.001','snd_mute_losefocus true','snd_headphone_eq 0','snd_spatialize_lerp 0',
-        'cl_prefer_lefthanded false','cl_color 1','mm_dedicated_search_maxping 150','con_enable true',
-        'cl_use_opens_buy_menu false','cl_teammate_colors_show 1',
-        'cl_buymenu_ct_nextround_high 5000','cl_buymenu_ct_nextround_low 1400',
-        'cl_buymenu_t_nextround_high 5000','cl_buymenu_t_nextround_low 1400'
-      ].join('; ');
-      copy(cmds, 'copyAll');
+
+    function copyAllCmds() {
+        const cmds = [
+            'cl_crosshairstyle 4','cl_crosshairsize 1','cl_crosshairthickness 1','cl_crosshairgap -4',
+            'cl_crosshairdot false','cl_crosshair_t false','cl_crosshairalpha 255','cl_crosshaircolor 4',
+            'cl_crosshaircolor_r 255','cl_crosshaircolor_g 255','cl_crosshaircolor_b 255',
+            'cl_crosshair_drawoutline false','cl_crosshair_recoil false','cl_crosshairusealpha true',
+            'viewmodel_fov 68','viewmodel_offset_x 2.5','viewmodel_offset_y 0','viewmodel_offset_z -1.5','viewmodel_presetpos 3',
+            'sensitivity 2.3','m_pitch 0.022','m_yaw 0.022','zoom_sensitivity_ratio 1',
+            'hud_scaling 1','cl_hud_color 9','cl_hud_radar_scale 0.91','cl_radar_scale 0.4',
+            'cl_radar_always_centered true','cl_radar_rotate true','cl_showfps 1','cl_showloadout true',
+            'volume 0.5','snd_mixahead 0.001','snd_mute_losefocus true','snd_headphone_eq 0','snd_spatialize_lerp 0',
+            'cl_prefer_lefthanded false','cl_color 1','mm_dedicated_search_maxping 150','con_enable true',
+            'cl_use_opens_buy_menu false','cl_teammate_colors_show 1',
+            'cl_buymenu_ct_nextround_high 5000','cl_buymenu_ct_nextround_low 1400',
+            'cl_buymenu_t_nextround_high 5000','cl_buymenu_t_nextround_low 1400'
+        ].join('; ');
+        copy(cmds, 'copyAll');
     }
 </script>
 </body>
