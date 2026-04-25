@@ -1,534 +1,633 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SANJIK · GAMER PROFILE</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>SANJIK — Player Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"/>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
-        :root {
-          --bg:        #02010a;
-          --surface:   #07041a;
-          --panel:     #0a0720;
-          --panel2:    #0d0a28;
-          --border:    #1e1550;
-
-          --violet:    #7b2fff;
-          --magenta:   #e800ff;
-          --plasma:    #ff6b00;
-          --ice:       #00cfff;
-          --lime:      #39ff6e;
-
-          --accent1:   #7b2fff;
-          --accent2:   #e800ff;
-          --accent3:   #ff6b00;
-
-          --text:      #c4b8f0;
-          --muted:     #4a3d7a;
-
-          --glow-v:  0 0 10px #7b2fff99, 0 0 30px #7b2fff44;
-          --glow-m:  0 0 10px #e800ff99, 0 0 30px #e800ff33;
-          --glow-p:  0 0 10px #ff6b0099, 0 0 30px #ff6b0033;
-          --glow-i:  0 0 10px #00cfff99, 0 0 30px #00cfff33;
+        :root{
+          --bg:#1a1a1a;
+          --surface:#242424;
+          --border:#333;
+          --border2:#2a2a2a;
+          --text:#e5e5e5;
+          --muted:#888;
+          --dim:#555;
+          --orange:#f4a62a;
+          --orange-dim:#c4832a;
+          --green:#5db85d;
+          --blue:#4b9fd4;
         }
 
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(var(--violet), var(--magenta)); border-radius: 2px; }
-
-        body { cursor: none; }
-        #cursor {
-          position: fixed; top: 0; left: 0;
-          width: 10px; height: 10px;
-          background: var(--magenta);
-          border-radius: 50%;
-          pointer-events: none; z-index: 9999;
-          transform: translate(-50%,-50%);
-          box-shadow: var(--glow-m);
-          transition: width .15s, height .15s, background .15s;
-        }
-        #cursor-ring {
-          position: fixed; top: 0; left: 0;
-          width: 32px; height: 32px;
-          border: 1.5px solid var(--violet);
-          border-radius: 50%;
-          pointer-events: none; z-index: 9998;
-          transform: translate(-50%,-50%);
-          opacity: .7;
-        }
-        #cursor.hovered { width: 5px; height: 5px; background: var(--plasma); }
-        #cursor-ring.hovered { width: 42px; height: 42px; border-color: var(--plasma); opacity: 1; }
-
-        html { scroll-behavior: smooth; }
-        body {
-          background: var(--bg);
-          color: var(--text);
-          font-family: 'Rajdhani', sans-serif;
-          min-height: 100vh;
-          overflow-x: hidden;
+        body{
+          background:var(--bg);
+          color:var(--text);
+          font-family:'Inter',sans-serif;
+          font-size:14px;
+          min-height:100vh;
         }
 
-        body::before {
-          content: '';
-          position: fixed; inset: 0;
-          background-image:
-            linear-gradient(rgba(123,47,255,.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(123,47,255,.06) 1px, transparent 1px),
-            linear-gradient(rgba(232,0,255,.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(232,0,255,.025) 1px, transparent 1px);
-          background-size: 60px 60px, 60px 60px, 20px 20px, 20px 20px;
-          pointer-events: none; z-index: 0;
-        }
 
-        body::after {
-          content: '';
-          position: fixed; inset: 0;
-          background: repeating-linear-gradient(
-            0deg, transparent, transparent 3px,
-            rgba(0,0,0,.12) 3px, rgba(0,0,0,.12) 4px
-          );
-          pointer-events: none; z-index: 0; opacity: .5;
-        }
 
-        .blob {
-          position: fixed; border-radius: 50%;
-          filter: blur(100px); pointer-events: none; z-index: 0;
+        /* PROFILE HEADER */
+        .profile-header{
+          background:#1e1e1e;
+          border-bottom:1px solid var(--border);
         }
-        .blob-1 { width:600px;height:600px;opacity:.14; background:radial-gradient(circle,var(--violet),transparent 70%); top:-200px;left:-200px; animation:drift 14s ease-in-out infinite alternate; }
-        .blob-2 { width:500px;height:500px;opacity:.12; background:radial-gradient(circle,var(--magenta),transparent 70%); bottom:-150px;right:-150px; animation:drift 10s ease-in-out infinite alternate-reverse; }
-        .blob-3 { width:350px;height:350px;opacity:.10; background:radial-gradient(circle,var(--plasma),transparent 70%); top:45%;left:30%; animation:drift 18s ease-in-out infinite alternate; }
-        .blob-4 { width:250px;height:250px;opacity:.08; background:radial-gradient(circle,var(--ice),transparent 70%); top:20%;right:10%; animation:drift 11s ease-in-out infinite alternate-reverse; }
-
-        @keyframes drift { from{transform:translate(0,0) scale(1);} to{transform:translate(40px,30px) scale(1.12);} }
-
-        .wrapper {
-          position: relative; z-index: 1;
-          max-width: 720px; margin: 0 auto;
-          padding: 70px 24px 110px;
+        .profile-header-inner{
+          max-width:1000px;
+          margin:0 auto;
+          padding:28px 24px 0;
         }
-
-        .hero {
-          text-align: center;
-          margin-bottom: 60px;
-          animation: fadeDown .9s cubic-bezier(.22,1,.36,1) both;
+        .profile-top{
+          display:flex;
+          align-items:flex-end;
+          gap:20px;
+          margin-bottom:0;
         }
-        @keyframes fadeDown { from{opacity:0;transform:translateY(-32px);} to{opacity:1;transform:translateY(0);} }
-
-        .logo-ring {
-          position: relative; display: inline-block;
-          width: 130px; height: 130px;
-          margin-bottom: 28px;
-        }
-        .logo-ring svg.ring-outer {
-          position: absolute; inset: 0; width: 100%; height: 100%;
-          animation: spin 12s linear infinite;
-        }
-        .logo-ring svg.ring-inner {
-          position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px);
-          animation: spin 5s linear infinite reverse;
-        }
-        @keyframes spin { to{transform:rotate(360deg);} }
-
-        .logo-core {
-          position: absolute; inset: 18px;
-          background: var(--panel);
-          border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-family: 'Orbitron', monospace;
-          font-weight: 900; font-size: 26px;
-          color: var(--magenta);
-          text-shadow: var(--glow-m);
-          border: 1px solid #2a1560;
-          overflow: hidden;
-        }
-        .logo-core img { width:100%;height:100%;object-fit:cover;border-radius:50%;display:block; }
-
-        .logo-flare {
-          position: absolute; inset: 0; border-radius: 50%;
-          background: conic-gradient(
-            from 0deg,
-            transparent 0%, #7b2fff22 10%, transparent 20%,
-            #e800ff22 30%, transparent 40%,
-            #ff6b0011 50%, transparent 60%,
-            #00cfff22 70%, transparent 80%,
-            #7b2fff22 90%, transparent 100%
-          );
-          animation: spin 6s linear infinite;
-          pointer-events: none;
-        }
-
-        .hero-name {
-          font-family: 'Orbitron', monospace;
-          font-size: clamp(30px, 7vw, 52px);
-          font-weight: 900; letter-spacing: 6px;
-          background: linear-gradient(135deg, #fff 0%, var(--ice) 35%, var(--magenta) 65%, var(--violet) 100%);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-          margin-bottom: 10px;
-          filter: drop-shadow(0 0 20px #7b2fff66);
-        }
-
-        .hero-tag {
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 13px; color: var(--plasma);
-          letter-spacing: 3px; text-transform: uppercase;
-          text-shadow: var(--glow-p);
-        }
-
-        .status {
-          display: inline-flex; align-items: center; gap: 10px;
-          margin-top: 18px; padding: 7px 18px;
-          border: 1px solid #7b2fff44; border-radius: 2px;
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 11px; letter-spacing: 3px;
-          color: var(--lime);
-          background: rgba(57,255,110,.04);
-        }
-        .status-dot {
-          width: 7px; height: 7px; border-radius: 50%;
-          background: var(--lime);
-          box-shadow: 0 0 8px var(--lime), 0 0 16px var(--lime);
-          animation: pulse 1.8s ease-in-out infinite;
-        }
-        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.2;} }
-
-        .section-label {
-          display: flex; align-items: center; gap: 12px;
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 10px; letter-spacing: 5px;
-          color: var(--muted); text-transform: uppercase;
-          margin-bottom: 18px;
-        }
-        .section-label::after {
-          content:''; flex:1; height:1px;
-          background: linear-gradient(90deg, #1e1550, transparent);
-        }
-
-        .cards { display: flex; flex-direction: column; gap: 12px; }
-
-        .card {
-          position: relative;
-          display: flex; align-items: center; gap: 20px;
-          padding: 20px 22px;
-          background: var(--panel);
-          border: 1px solid var(--border);
-          border-left: 3px solid transparent;
-          text-decoration: none; color: var(--text);
-          overflow: hidden;
-          transition: transform .3s cubic-bezier(.22,1,.36,1), border-color .3s, background .3s, box-shadow .3s;
-          animation: fadeUp .7s cubic-bezier(.22,1,.36,1) both;
-          clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
-        }
-        .card:nth-child(1){animation-delay:.10s}
-        .card:nth-child(2){animation-delay:.18s}
-        .card:nth-child(3){animation-delay:.26s}
-        .card:nth-child(4){animation-delay:.34s}
-
-        @keyframes fadeUp { from{opacity:0;transform:translateY(28px);} to{opacity:1;transform:translateY(0);} }
-
-        .card::before {
-          content:'';
-          position:absolute; inset:0;
-          background: linear-gradient(
-            105deg,
-            transparent 20%,
-            rgba(123,47,255,.08) 35%,
-            rgba(232,0,255,.06) 50%,
-            rgba(0,207,255,.07) 65%,
-            transparent 80%
-          );
-          transform: translateX(-120%);
-          transition: transform .65s ease;
-        }
-        .card:hover::before { transform: translateX(120%); }
-
-        .card::after {
-          content:'';
-          position:absolute; top:0; right:0;
-          width:0; height:0;
-          border-style: solid;
-          border-width: 0 14px 14px 0;
-          border-color: transparent var(--card-accent, var(--violet)) transparent transparent;
-          opacity: .7; transition: opacity .3s;
-        }
-        .card:hover::after { opacity: 1; }
-
-        .card:hover {
-          transform: translateX(8px);
-          background: var(--panel2);
-          border-left-color: var(--card-accent, var(--violet));
-          box-shadow: -4px 0 24px var(--card-glow, rgba(123,47,255,.25)),
-                      inset 0 0 40px rgba(123,47,255,.04);
-        }
-
-        .card.steam       { --card-accent:#00cfff; --card-glow:rgba(0,207,255,.22); }
-        .card.steam-trade { --card-accent:#ff6b00; --card-glow:rgba(255,107,0,.22); }
-        .card.riot        { --card-accent:#e800ff; --card-glow:rgba(232,0,255,.22); }
-        .card.chess       { --card-accent:#39ff6e; --card-glow:rgba(57,255,110,.22); }
-
-        .card-icon {
-          flex-shrink:0; width:50px; height:50px;
-          display:flex; align-items:center; justify-content:center;
-          border-radius:3px;
-          background: rgba(255,255,255,.03);
-          border: 1px solid var(--border);
-          transition: box-shadow .3s, border-color .3s;
-        }
-        .card:hover .card-icon {
-          box-shadow: 0 0 20px var(--card-accent, var(--violet))66;
-          border-color: var(--card-accent, var(--violet))55;
-        }
-        .card-icon svg { width:26px; height:26px; }
-
-        .card-body { flex:1; min-width:0; }
-        .card-platform {
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 10px; letter-spacing: 3.5px;
-          color: var(--card-accent, var(--violet));
-          text-transform: uppercase; margin-bottom: 4px;
-          text-shadow: 0 0 8px var(--card-accent, var(--violet));
-        }
-        .card-value {
-          font-family: 'Orbitron', monospace;
-          font-size: 15px; font-weight: 700;
-          color: #fff; white-space: nowrap;
-          overflow: hidden; text-overflow: ellipsis;
-        }
-        .card-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
-
-        .card-arrow {
-          flex-shrink:0; font-size:18px;
-          color: var(--card-accent, var(--violet));
-          opacity:0; transform:translateX(-10px);
-          transition: opacity .25s, transform .25s;
-          text-shadow: 0 0 10px var(--card-accent, var(--violet));
-        }
-        .card:hover .card-arrow { opacity:1; transform:translateX(0); }
-
-        .copy-btn {
+        .avatar-wrap{
+          position:relative;
           flex-shrink:0;
-          padding: 7px 14px;
-          background: transparent;
-          border: 1px solid var(--border);
-          color: var(--muted);
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 10px; letter-spacing: 2px;
-          cursor: none;
-          transition: color .2s, border-color .2s, background .2s, box-shadow .2s;
-          clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
         }
-        .copy-btn:hover {
-          color: var(--card-accent, var(--violet));
-          border-color: var(--card-accent, var(--violet));
-          background: rgba(123,47,255,.08);
-          box-shadow: 0 0 12px var(--card-accent, var(--violet))44;
+        .avatar{
+          width:90px;height:90px;
+          border-radius:3px;
+          background:#2a2a2a;
+          object-fit:cover;
+          display:block;
+          border:2px solid var(--border);
         }
-        .copy-btn.copied { color: var(--lime); border-color: var(--lime); }
+        .avatar-placeholder{
+          width:90px;height:90px;
+          border-radius:3px;
+          background:linear-gradient(135deg,#2a2a2a,#1a1a1a);
+          border:2px solid var(--border);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size:28px;
+          font-weight:700;
+          color:var(--orange);
+        }
+        .online-badge{
+          position:absolute;
+          bottom:4px;right:4px;
+          width:10px;height:10px;
+          border-radius:50%;
+          background:var(--green);
+          border:2px solid #1e1e1e;
+        }
+        .profile-info{
+          flex:1;
+          padding-bottom:16px;
+        }
+        .profile-nick{
+          font-size:26px;
+          font-weight:700;
+          color:#fff;
+          letter-spacing:-.3px;
+          margin-bottom:4px;
+        }
+        .profile-country{
+          display:flex;
+          align-items:center;
+          gap:6px;
+          color:var(--muted);
+          font-size:12px;
+          margin-bottom:10px;
+        }
+        .flag{font-size:16px;}
+        .profile-meta{
+          display:flex;
+          gap:16px;
+        }
+        .meta-tag{
+          background:#2a2a2a;
+          border:1px solid var(--border);
+          border-radius:2px;
+          padding:3px 10px;
+          font-size:11px;
+          color:var(--muted);
+          font-weight:500;
+          text-transform:uppercase;
+          letter-spacing:.5px;
+        }
+        .meta-tag.active{
+          color:var(--green);
+          border-color:#3a4a3a;
+          background:#1e2a1e;
+        }
 
-        .divider {
-          display:flex; align-items:center; gap:16px;
-          margin: 36px 0 0;
+        .profile-tabs{
+          display:flex;
+          gap:0;
+          margin-top:16px;
+          border-top:1px solid var(--border2);
         }
-        .divider-line { flex:1; height:1px; background:linear-gradient(90deg,transparent,#1e1550,transparent); }
-        .divider-gem {
-          width:8px; height:8px;
-          background: var(--violet);
-          transform: rotate(45deg);
-          box-shadow: var(--glow-v);
+        .tab{
+          padding:11px 18px;
+          font-size:12px;
+          font-weight:600;
+          color:var(--muted);
+          cursor:pointer;
+          border-bottom:2px solid transparent;
+          text-transform:uppercase;
+          letter-spacing:.5px;
+          transition:color .15s;
+        }
+        .tab.active{
+          color:var(--orange);
+          border-bottom-color:var(--orange);
         }
 
-        footer {
-          text-align:center; margin-top:40px;
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 10px; letter-spacing: 4px;
-          color: var(--muted);
-          animation: fadeUp .8s ease .8s both;
+        /* MAIN LAYOUT */
+        .main{
+          max-width:1000px;
+          margin:0 auto;
+          padding:20px 24px;
+          display:grid;
+          grid-template-columns:1fr 280px;
+          gap:16px;
+          align-items:start;
         }
-        .heart { color: var(--magenta); text-shadow: var(--glow-m); }
 
-        #toast {
-          position:fixed; bottom:36px; left:50%;
-          transform: translateX(-50%) translateY(20px);
-          background: var(--panel2);
-          border: 1px solid var(--violet);
-          color: var(--magenta);
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 11px; letter-spacing: 3px;
-          padding: 10px 26px;
-          opacity:0; pointer-events:none; z-index:9000;
-          transition: opacity .3s, transform .3s;
+        /* PANELS */
+        .panel{
+          background:var(--surface);
+          border:1px solid var(--border);
+          border-radius:2px;
+          margin-bottom:12px;
+        }
+        .panel-head{
+          padding:10px 14px;
+          border-bottom:1px solid var(--border2);
+          font-size:11px;
+          font-weight:700;
+          text-transform:uppercase;
+          letter-spacing:1px;
+          color:var(--muted);
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+        }
+
+        /* ACCOUNTS */
+        .account-row{
+          display:flex;
+          align-items:center;
+          gap:12px;
+          padding:11px 14px;
+          border-bottom:1px solid var(--border2);
+          text-decoration:none;
+          color:var(--text);
+          transition:background .12s;
+        }
+        .account-row:last-child{border-bottom:none;}
+        .account-row:hover{background:#2a2a2a;}
+        .acc-icon{
+          width:32px;height:32px;
+          border-radius:3px;
+          display:flex;align-items:center;justify-content:center;
+          flex-shrink:0;
+        }
+        .acc-icon svg{width:18px;height:18px;}
+        .acc-info{flex:1;}
+        .acc-platform{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;}
+        .acc-value{font-size:13px;font-weight:600;}
+        .acc-action{
+          font-size:10px;
+          color:var(--dim);
+          padding:4px 10px;
+          border:1px solid var(--border);
+          border-radius:2px;
+          background:none;
+          cursor:pointer;
+          font-family:'Roboto Mono',monospace;
+          letter-spacing:.3px;
+          transition:color .15s, border-color .15s;
+          text-decoration:none;
           white-space:nowrap;
-          box-shadow: var(--glow-v);
-          clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
         }
-        #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+        .acc-action:hover{color:var(--text);border-color:var(--dim);}
+        .acc-action.done{color:var(--green);border-color:#3a4a3a;}
+
+        /* CS2 SETTINGS */
+        .settings-grid{
+          display:grid;
+          gap:0;
+        }
+        .setting-row{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          padding:8px 14px;
+          border-bottom:1px solid var(--border2);
+          gap:12px;
+        }
+        .setting-row:last-child{border-bottom:none;}
+        .setting-label{
+          font-size:12px;
+          color:var(--muted);
+          flex:1;
+        }
+        .setting-val{
+          font-family:'Roboto Mono',monospace;
+          font-size:12px;
+          color:var(--text);
+          font-weight:500;
+          text-align:right;
+        }
+        .setting-val.highlight{color:var(--orange);}
+
+        /* CROSSHAIR PREVIEW */
+        .crosshair-box{
+          padding:14px;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          gap:10px;
+        }
+        .crosshair-preview{
+          width:80px;height:80px;
+          background:#111;
+          border:1px solid var(--border);
+          border-radius:2px;
+          display:flex;align-items:center;justify-content:center;
+          position:relative;
+        }
+        .ch-h{position:absolute;height:2px;background:#fff;left:50%;transform:translateX(-50%);width:6px;margin-left:-5px;}
+        .ch-h2{position:absolute;height:2px;background:#fff;left:50%;transform:translateX(-50%);width:6px;margin-left:5px;}
+        .ch-v{position:absolute;width:2px;background:#fff;top:50%;transform:translateY(-50%);height:6px;margin-top:-5px;}
+        .ch-v2{position:absolute;width:2px;background:#fff;top:50%;transform:translateY(-50%);height:6px;margin-top:5px;}
+        .crosshair-code{
+          font-family:'Roboto Mono',monospace;
+          font-size:9px;
+          color:var(--dim);
+          text-align:center;
+          line-height:1.5;
+          word-break:break-all;
+        }
+
+        /* COMMANDS SECTION */
+        .cmd-section{margin-bottom:0;}
+        .cmd-category{
+          padding:8px 14px 4px;
+          font-size:10px;
+          color:var(--orange);
+          font-weight:700;
+          text-transform:uppercase;
+          letter-spacing:1px;
+          background:#1e1e1e;
+          border-bottom:1px solid var(--border2);
+        }
+        .cmd-row{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          padding:6px 14px;
+          border-bottom:1px solid var(--border2);
+          gap:10px;
+        }
+        .cmd-row:last-child{border-bottom:none;}
+        .cmd-key{
+          font-family:'Roboto Mono',monospace;
+          font-size:11px;
+          color:var(--muted);
+          flex:1;
+        }
+        .cmd-v{
+          font-family:'Roboto Mono',monospace;
+          font-size:11px;
+          color:var(--text);
+          text-align:right;
+        }
+
+        /* SIDEBAR */
+        .sidebar{}
+
+        /* TOAST */
+        #toast{
+          position:fixed;bottom:24px;left:50%;
+          transform:translateX(-50%) translateY(16px);
+          background:#2a2a2a;border:1px solid var(--border);
+          color:var(--green);
+          font-size:11px;font-family:'Roboto Mono',monospace;
+          padding:8px 20px;border-radius:2px;
+          opacity:0;pointer-events:none;z-index:999;
+          transition:opacity .2s,transform .2s;
+        }
+        #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+        @media(max-width:720px){
+          .main{grid-template-columns:1fr;}
+          .sidebar{order:-1;}
+        }
     </style>
 </head>
 <body>
 
-<div id="cursor"></div>
-<div id="cursor-ring"></div>
-
-<div class="blob blob-1"></div>
-<div class="blob blob-2"></div>
-<div class="blob blob-3"></div>
-<div class="blob blob-4"></div>
-
-<div id="toast">⬡ COPIED TO CLIPBOARD ⬡</div>
-
-<div class="wrapper">
-
-    <div class="hero">
-        <div class="logo-ring">
-            <svg class="ring-outer" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="65" cy="65" r="60" stroke="url(#outerGrad)" stroke-width="1.5" stroke-dasharray="8 5" stroke-linecap="round"/>
-                <defs>
-                    <linearGradient id="outerGrad" x1="0" y1="0" x2="130" y2="130" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%"   stop-color="#7b2fff"/>
-                        <stop offset="33%"  stop-color="#e800ff"/>
-                        <stop offset="66%"  stop-color="#ff6b00"/>
-                        <stop offset="100%" stop-color="#7b2fff"/>
-                    </linearGradient>
-                </defs>
-            </svg>
-            <svg class="ring-inner" viewBox="0 0 114 114" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="57" cy="57" r="52" stroke="url(#innerGrad)" stroke-width="1" stroke-dasharray="3 9" stroke-linecap="round"/>
-                <defs>
-                    <linearGradient id="innerGrad" x1="0" y1="0" x2="114" y2="114" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%"   stop-color="#00cfff"/>
-                        <stop offset="50%"  stop-color="#7b2fff"/>
-                        <stop offset="100%" stop-color="#00cfff"/>
-                    </linearGradient>
-                </defs>
-            </svg>
-            <div class="logo-core">
-                <img src="avatar.jpg" alt="sanjik" onerror="this.style.display='none'" />
+<div class="profile-header">
+    <div class="profile-header-inner">
+        <div class="profile-top">
+            <div class="avatar-wrap">
+                <div class="avatar-placeholder">S</div>
+                <div class="online-badge"></div>
             </div>
-            <div class="logo-flare"></div>
-        </div>
-
-        <div class="hero-name">SANJIK</div>
-        <div class="hero-tag">Chill Uzbek</div>
-        <div class="status">
-            <span class="status-dot"></span>
-            ONLINE · ALL SYSTEMS NOMINAL
-        </div>
-    </div>
-
-    <div class="section-label">// LINKED ACCOUNTS</div>
-    <div class="cards">
-
-        <a class="card steam" href="https://steamcommunity.com/id/sanj1k" target="_blank" rel="noopener">
-            <div class="card-icon">
-                <svg viewBox="0 0 24 24" fill="#00cfff" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 0C5.373 0 0 5.373 0 12c0 5.623 3.872 10.328 9.092 11.63L14.12 12h-.058a4.964 4.964 0 0 0 .938-2.933 4.97 4.97 0 0 0-4.97-4.97 4.97 4.97 0 0 0-4.97 4.97c0 .612.112 1.196.314 1.737L.728 13.815C.254 13.24 0 12.636 0 12 0 5.373 5.373 0 12 0zm7.29 16.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zm-9.04-4.53a3.48 3.48 0 0 1-3.48 3.48 3.48 3.48 0 0 1-3.48-3.48 3.48 3.48 0 0 1 3.48-3.48 3.48 3.48 0 0 1 3.48 3.48z"/>
-                </svg>
-            </div>
-            <div class="card-body">
-                <div class="card-platform">Steam Profile</div>
-                <div class="card-value">sanj1k</div>
-                <div class="card-desc">View profile &amp; game library</div>
-            </div>
-            <div class="card-arrow">→</div>
-        </a>
-
-        <div class="card steam-trade" style="cursor:none;">
-            <div class="card-icon">
-                <svg viewBox="0 0 24 24" fill="#ff6b00" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 7l-9-5-9 5v10l9 5 9-5V7zm-9 13l-7-3.89V9l7 3.89V20zm1-12.27L6.06 7l6.94-3.85L19.94 7 13 10.73zm6 8.38L14 20v-7.11l6-3.34v6.56z"/>
-                </svg>
-            </div>
-            <div class="card-body">
-                <div class="card-platform">Steam Trade Link</div>
-                <div class="card-value" style="font-size:10px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-weight:400;letter-spacing:0;">
-                    steamcommunity.com/tradeoffer/new/?partner=778967474&amp;token=77mPlRxl
+            <div class="profile-info">
+                <div class="profile-nick">sanjik</div>
+                <div class="profile-country">
+                    <span class="flag">🇺🇿</span>
+                    <span>Uzbekistan</span>
                 </div>
-                <div class="card-desc">Copy &amp; paste to send a trade offer</div>
+                <div class="profile-meta">
+                    <div class="meta-tag active">● Online</div>
+                    <div class="meta-tag">CS2</div>
+                </div>
             </div>
-            <button class="copy-btn" id="copyTrade"
-                    onclick="copyText('https://steamcommunity.com/tradeoffer/new/?partner=778967474&token=77mPlRxl','copyTrade')">COPY</button>
+        </div>
+        <div class="profile-tabs">
+            <div class="tab active">Overview</div>
+            <div class="tab">Settings</div>
+            <div class="tab">Accounts</div>
+        </div>
+    </div>
+</div>
+
+<div id="toast">Copied to clipboard</div>
+
+<div class="main">
+    <div class="left-col">
+
+        <!-- Accounts -->
+        <div class="panel">
+            <div class="panel-head">Linked Accounts</div>
+
+            <a class="account-row" href="https://steamcommunity.com/id/sanj1k" target="_blank" rel="noopener">
+                <div class="acc-icon" style="background:#1b2838;">
+                    <svg viewBox="0 0 24 24" fill="#c6d4df"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.623 3.872 10.328 9.092 11.63L14.12 12h-.058a4.964 4.964 0 0 0 .938-2.933 4.97 4.97 0 0 0-4.97-4.97 4.97 4.97 0 0 0-4.97 4.97c0 .612.112 1.196.314 1.737L.728 13.815C.254 13.24 0 12.636 0 12 0 5.373 5.373 0 12 0zm7.29 16.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zm-9.04-4.53a3.48 3.48 0 0 1-3.48 3.48 3.48 3.48 0 0 1-3.48-3.48 3.48 3.48 0 0 1 3.48-3.48 3.48 3.48 0 0 1 3.48 3.48z"/></svg>
+                </div>
+                <div class="acc-info">
+                    <div class="acc-platform">Steam</div>
+                    <div class="acc-value">sanj1k</div>
+                </div>
+                <span class="acc-action">Visit →</span>
+            </a>
+
+            <div class="account-row">
+                <div class="acc-icon" style="background:#1a1a2e;">
+                    <svg viewBox="0 0 24 24" fill="#d13639"><path d="M0 1.168l2.54 16.478L9.375 19.5v-2.953l-4.41-.959L3.47 7.031h9.063V4.078H3.086L2.705 1.168H0zm8.297 9.89h7.57l-.453 5.024-3.289.885-3.289-.885-.214-2.39H6.41l.39 4.418 5.434 1.497 5.432-1.497.764-8.546H8.506l-.21-2.344h10.476l.207-2.953H5.879l.418 6.79z"/></svg>
+                </div>
+                <div class="acc-info">
+                    <div class="acc-platform">Riot Games</div>
+                    <div class="acc-value">sanjik<span style="color:var(--muted)">#1337</span></div>
+                </div>
+                <button class="acc-action" id="copyRiot" onclick="copy('sanjik#1337','copyRiot')">Copy ID</button>
+            </div>
+
+            <div class="account-row">
+                <div class="acc-icon" style="background:#1a1a1a;">
+                    <svg viewBox="0 0 24 24" fill="#888"><path d="M21 7l-9-5-9 5v10l9 5 9-5V7zm-9 13l-7-3.89V9l7 3.89V20zm1-12.27L6.06 7l6.94-3.85L19.94 7 13 10.73zm6 8.38L14 20v-7.11l6-3.34v6.56z"/></svg>
+                </div>
+                <div class="acc-info">
+                    <div class="acc-platform">Steam Trade Link</div>
+                    <div class="acc-value" style="font-size:11px;color:var(--muted);font-family:'Roboto Mono',monospace;font-weight:400;">partner=778967474&token=77mPlRxl</div>
+                </div>
+                <button class="acc-action" id="copyTrade" onclick="copy('https://steamcommunity.com/tradeoffer/new/?partner=778967474&token=77mPlRxl','copyTrade')">Copy</button>
+            </div>
+
+            <a class="account-row" href="https://www.chess.com/member/chilluzbek" target="_blank" rel="noopener">
+                <div class="acc-icon" style="background:#2a2a2a;">
+                    <svg viewBox="0 0 24 24" fill="#7fa650"><path d="M9.5 2a2.5 2.5 0 0 0 0 5c.17 0 .34-.018.5-.05V8H7l-1 4h12l-1-4h-3V6.95a2.5 2.5 0 1 0-4.5-4.95zM12 4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1zm-7 9h14l1 2H4l1-2zm-1 4h16l-1 3H5l-1-3z"/></svg>
+                </div>
+                <div class="acc-info">
+                    <div class="acc-platform">Chess.com</div>
+                    <div class="acc-value">chilluzbek</div>
+                </div>
+                <span class="acc-action">Visit →</span>
+            </a>
         </div>
 
-        <div class="card riot" style="cursor:none;">
-            <div class="card-icon">
-                <svg viewBox="0 0 24 24" fill="#e800ff" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M0 1.168l2.54 16.478L9.375 19.5v-2.953l-4.41-.959L3.47 7.031h9.063V4.078H3.086L2.705 1.168H0zm8.297 9.89h7.57l-.453 5.024-3.289.885-3.289-.885-.214-2.39H6.41l.39 4.418 5.434 1.497 5.432-1.497.764-8.546H8.506l-.21-2.344h10.476l.207-2.953H5.879l.418 6.79z"/>
-                </svg>
+        <!-- CS2 Settings -->
+        <div class="panel">
+            <div class="panel-head">CS2 Settings</div>
+            <div class="settings-grid">
+                <div class="setting-row">
+                    <span class="setting-label">Sensitivity</span>
+                    <span class="setting-val highlight">2.3</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">DPI (assumed)</span>
+                    <span class="setting-val">—</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Mouse Pitch / Yaw</span>
+                    <span class="setting-val">0.022 / 0.022</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Zoom Sensitivity Ratio</span>
+                    <span class="setting-val">1.0</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Viewmodel FOV</span>
+                    <span class="setting-val highlight">68</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Viewmodel Offset X / Y / Z</span>
+                    <span class="setting-val">2.5 / 0.0 / -1.5</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Viewmodel Preset</span>
+                    <span class="setting-val">3</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">HUD Scaling</span>
+                    <span class="setting-val">1.0</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Radar Scale</span>
+                    <span class="setting-val">0.4</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Radar Centered</span>
+                    <span class="setting-val">Yes</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Max Ping</span>
+                    <span class="setting-val">150</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Volume</span>
+                    <span class="setting-val">50%</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Left Hand</span>
+                    <span class="setting-val">No</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Show FPS</span>
+                    <span class="setting-val">Yes</span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="card-platform">Riot Games</div>
-                <div class="card-value">sanjik#1337</div>
-                <div class="card-desc">Valorant</div>
-            </div>
-            <button class="copy-btn" id="copyRiot"
-                    onclick="copyText('sanjik#1337','copyRiot')">COPY</button>
         </div>
 
-        <a class="card chess" href="https://www.chess.com/member/chilluzbek" target="_blank" rel="noopener">
-            <div class="card-icon">
-                <svg viewBox="0 0 24 24" fill="#39ff6e" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9.5 2a2.5 2.5 0 0 0 0 5c.17 0 .34-.018.5-.05V8H7l-1 4h12l-1-4h-3V6.95a2.5 2.5 0 1 0-4.5-4.95zM12 4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1zm-7 9h14l1 2H4l1-2zm-1 4h16l-1 3H5l-1-3z"/>
-                </svg>
+        <!-- Console Commands -->
+        <div class="panel">
+            <div class="panel-head">
+                Console Commands
+                <button class="acc-action" id="copyAll" onclick="copyAllCmds()">Copy All</button>
             </div>
-            <div class="card-body">
-                <div class="card-platform">Chess.com</div>
-                <div class="card-value">chilluzbek</div>
-                <div class="card-desc">Challenge me to a match</div>
-            </div>
-            <div class="card-arrow">→</div>
-        </a>
+
+            <div class="cmd-category">Crosshair</div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshairstyle</span><span class="cmd-v">4</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshairsize</span><span class="cmd-v">1</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshairthickness</span><span class="cmd-v">1</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshairgap</span><span class="cmd-v">-4</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshairdot</span><span class="cmd-v">false</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshair_t</span><span class="cmd-v">false</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshairalpha</span><span class="cmd-v">255</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshaircolor</span><span class="cmd-v">4</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshaircolor_r</span><span class="cmd-v">255</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshaircolor_g</span><span class="cmd-v">255</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshaircolor_b</span><span class="cmd-v">255</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshair_drawoutline</span><span class="cmd-v">false</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshair_recoil</span><span class="cmd-v">false</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_crosshairusealpha</span><span class="cmd-v">true</span></div>
+
+            <div class="cmd-category">Viewmodel</div>
+            <div class="cmd-row"><span class="cmd-key">viewmodel_fov</span><span class="cmd-v">68</span></div>
+            <div class="cmd-row"><span class="cmd-key">viewmodel_offset_x</span><span class="cmd-v">2.5</span></div>
+            <div class="cmd-row"><span class="cmd-key">viewmodel_offset_y</span><span class="cmd-v">0</span></div>
+            <div class="cmd-row"><span class="cmd-key">viewmodel_offset_z</span><span class="cmd-v">-1.5</span></div>
+            <div class="cmd-row"><span class="cmd-key">viewmodel_presetpos</span><span class="cmd-v">3</span></div>
+
+            <div class="cmd-category">Mouse</div>
+            <div class="cmd-row"><span class="cmd-key">sensitivity</span><span class="cmd-v">2.3</span></div>
+            <div class="cmd-row"><span class="cmd-key">m_pitch</span><span class="cmd-v">0.022</span></div>
+            <div class="cmd-row"><span class="cmd-key">m_yaw</span><span class="cmd-v">0.022</span></div>
+            <div class="cmd-row"><span class="cmd-key">zoom_sensitivity_ratio</span><span class="cmd-v">1</span></div>
+
+            <div class="cmd-category">HUD & Radar</div>
+            <div class="cmd-row"><span class="cmd-key">hud_scaling</span><span class="cmd-v">1</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_hud_color</span><span class="cmd-v">9</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_hud_radar_scale</span><span class="cmd-v">0.91</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_radar_scale</span><span class="cmd-v">0.4</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_radar_always_centered</span><span class="cmd-v">true</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_radar_rotate</span><span class="cmd-v">true</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_showfps</span><span class="cmd-v">1</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_showloadout</span><span class="cmd-v">true</span></div>
+
+            <div class="cmd-category">Audio</div>
+            <div class="cmd-row"><span class="cmd-key">volume</span><span class="cmd-v">0.5</span></div>
+            <div class="cmd-row"><span class="cmd-key">snd_mixahead</span><span class="cmd-v">0.001</span></div>
+            <div class="cmd-row"><span class="cmd-key">snd_mute_losefocus</span><span class="cmd-v">true</span></div>
+            <div class="cmd-row"><span class="cmd-key">snd_headphone_eq</span><span class="cmd-v">0</span></div>
+            <div class="cmd-row"><span class="cmd-key">snd_spatialize_lerp</span><span class="cmd-v">0</span></div>
+
+            <div class="cmd-category">Buy Menu</div>
+            <div class="cmd-row"><span class="cmd-key">cl_buymenu_ct_nextround_high</span><span class="cmd-v">5000</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_buymenu_ct_nextround_low</span><span class="cmd-v">1400</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_buymenu_t_nextround_high</span><span class="cmd-v">5000</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_buymenu_t_nextround_low</span><span class="cmd-v">1400</span></div>
+
+            <div class="cmd-category">Misc</div>
+            <div class="cmd-row"><span class="cmd-key">cl_prefer_lefthanded</span><span class="cmd-v">false</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_color</span><span class="cmd-v">1</span></div>
+            <div class="cmd-row"><span class="cmd-key">mm_dedicated_search_maxping</span><span class="cmd-v">150</span></div>
+            <div class="cmd-row"><span class="cmd-key">con_enable</span><span class="cmd-v">true</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_use_opens_buy_menu</span><span class="cmd-v">false</span></div>
+            <div class="cmd-row"><span class="cmd-key">cl_teammate_colors_show</span><span class="cmd-v">1</span></div>
+        </div>
 
     </div>
 
-    <div class="divider">
-        <div class="divider-line"></div>
-        <div class="divider-gem"></div>
-        <div class="divider-line"></div>
-    </div>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
 
-    <footer>
-        SANJIK &nbsp;·&nbsp; <span class="heart">♥</span> &nbsp;·&nbsp; GAMER PROFILE
-    </footer>
+        <!-- Crosshair -->
+        <div class="panel">
+            <div class="panel-head">Crosshair</div>
+            <div class="crosshair-box">
+                <div class="crosshair-preview">
+                    <div class="ch-h"></div>
+                    <div class="ch-h2"></div>
+                    <div class="ch-v"></div>
+                    <div class="ch-v2"></div>
+                </div>
+                <div class="crosshair-code">Style 4 · Size 1 · Gap -4<br>Thickness 1 · No dot · White</div>
+                <button class="acc-action" style="width:100%;text-align:center;" id="copyCH"
+                        onclick="copy('cl_crosshairstyle 4; cl_crosshairsize 1; cl_crosshairthickness 1; cl_crosshairgap -4; cl_crosshairdot false; cl_crosshair_t false; cl_crosshairalpha 255; cl_crosshaircolor 4; cl_crosshaircolor_r 255; cl_crosshaircolor_g 255; cl_crosshaircolor_b 255; cl_crosshair_drawoutline false; cl_crosshair_recoil false; cl_crosshairusealpha true','copyCH')">Copy Crosshair Commands</button>
+            </div>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="panel">
+            <div class="panel-head">Quick Info</div>
+            <div class="settings-grid">
+                <div class="setting-row">
+                    <span class="setting-label">Country</span>
+                    <span class="setting-val">🇺🇿 UZB</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Game</span>
+                    <span class="setting-val">CS2</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Sensitivity</span>
+                    <span class="setting-val highlight">2.3</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Hand</span>
+                    <span class="setting-val">Right</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Viewmodel</span>
+                    <span class="setting-val">Preset 3</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Max Ping</span>
+                    <span class="setting-val">150ms</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <script>
-    /* Dual-layer cursor with lag */
-    const cur  = document.getElementById('cursor');
-    const ring = document.getElementById('cursor-ring');
-    let rx = 0, ry = 0, mx = 0, my = 0;
-
-    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-
-    (function tick() {
-      rx += (mx - rx) * .10;
-      ry += (my - ry) * .10;
-      cur.style.left  = mx + 'px';  cur.style.top  = my + 'px';
-      ring.style.left = rx + 'px';  ring.style.top = ry + 'px';
-      requestAnimationFrame(tick);
-    })();
-
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => { cur.classList.add('hovered'); ring.classList.add('hovered'); });
-      el.addEventListener('mouseleave', () => { cur.classList.remove('hovered'); ring.classList.remove('hovered'); });
-    });
-
-    /* Copy to clipboard */
     const toast = document.getElementById('toast');
-    let toastTimer;
-
-    function copyText(text, btnId) {
-      navigator.clipboard.writeText(text).then(() => {
+    let tt;
+    function showToast(){
+      clearTimeout(tt);
+      toast.classList.add('show');
+      tt = setTimeout(()=>toast.classList.remove('show'), 2000);
+    }
+    function copy(text, btnId){
+      navigator.clipboard.writeText(text).then(()=>{
         const btn = document.getElementById(btnId);
-        if (btn) {
-          btn.textContent = 'COPIED!';
-          btn.classList.add('copied');
-          setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
-        }
-        clearTimeout(toastTimer);
-        toast.classList.add('show');
-        toastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
+        if(btn){ const orig=btn.textContent; btn.textContent='Copied!'; btn.classList.add('done'); setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('done');},2000); }
+        showToast();
       });
+    }
+    function copyAllCmds(){
+      const cmds = [
+        'cl_crosshairstyle 4','cl_crosshairsize 1','cl_crosshairthickness 1','cl_crosshairgap -4',
+        'cl_crosshairdot false','cl_crosshair_t false','cl_crosshairalpha 255','cl_crosshaircolor 4',
+        'cl_crosshaircolor_r 255','cl_crosshaircolor_g 255','cl_crosshaircolor_b 255',
+        'cl_crosshair_drawoutline false','cl_crosshair_recoil false','cl_crosshairusealpha true',
+        'viewmodel_fov 68','viewmodel_offset_x 2.5','viewmodel_offset_y 0','viewmodel_offset_z -1.5','viewmodel_presetpos 3',
+        'sensitivity 2.3','m_pitch 0.022','m_yaw 0.022','zoom_sensitivity_ratio 1',
+        'hud_scaling 1','cl_hud_color 9','cl_hud_radar_scale 0.91','cl_radar_scale 0.4',
+        'cl_radar_always_centered true','cl_radar_rotate true','cl_showfps 1','cl_showloadout true',
+        'volume 0.5','snd_mixahead 0.001','snd_mute_losefocus true','snd_headphone_eq 0','snd_spatialize_lerp 0',
+        'cl_prefer_lefthanded false','cl_color 1','mm_dedicated_search_maxping 150','con_enable true',
+        'cl_use_opens_buy_menu false','cl_teammate_colors_show 1',
+        'cl_buymenu_ct_nextround_high 5000','cl_buymenu_ct_nextround_low 1400',
+        'cl_buymenu_t_nextround_high 5000','cl_buymenu_t_nextround_low 1400'
+      ].join('; ');
+      copy(cmds, 'copyAll');
     }
 </script>
 </body>
