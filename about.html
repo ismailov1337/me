@@ -71,18 +71,25 @@
     .nav-center a:hover,.nav-center a.active{color:var(--text);}
     .nav-center a:hover::after,.nav-center a.active::after{transform:scaleX(1);}
     .nav-right{display:flex;align-items:center;gap:10px;}
-    .toggle {
-      width:34px;height:34px;border-radius:50%;border:1px solid var(--border-strong);
-      background:transparent;color:var(--text);cursor:none;font-size:13px;
-      display:flex;align-items:center;justify-content:center;transition:all 0.25s;
+
+    /* Theme toggle pill */
+    .theme-toggle {
+      display:flex;align-items:center;
+      border:1px solid var(--border-strong);border-radius:40px;
+      overflow:hidden;background:var(--surface);
+      transition:background 0.3s,border-color 0.3s;
     }
-    .toggle:hover{background:var(--accent-dim);transform:rotate(20deg);}
-    .nav-channel {
-      font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;
-      padding:7px 20px;border-radius:40px;background:var(--btn-bg);color:var(--btn-text);
-      text-decoration:none;transition:background 0.25s,transform 0.2s;
+    .theme-btn {
+      display:flex;align-items:center;gap:6px;
+      padding:7px 14px;cursor:none;border:none;background:transparent;
+      font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+      color:var(--muted);transition:all 0.25s;white-space:nowrap;
     }
-    .nav-channel:hover{background:var(--btn-hover);transform:translateY(-1px);}
+    .theme-btn i { font-size:12px; transition: transform 0.3s; }
+    .theme-btn.active { background:var(--accent-dim);color:var(--text); }
+    .theme-btn:hover:not(.active) { color:var(--text); }
+    .theme-btn:hover i { transform: rotate(20deg); }
+
     .back-btn {
       position:fixed;bottom:32px;left:40px;z-index:90;
       display:inline-flex;align-items:center;gap:8px;
@@ -129,8 +136,6 @@
       border:1px solid var(--border-strong);color:var(--muted);transition:all 0.25s;
     }
     .btn-outline:hover{color:var(--text);border-color:var(--text);}
-
-    /* Photo card instead of terminal */
     .hero-right {
       position:relative;z-index:1;
       opacity:0;animation:fadeLeft 0.8s 0.45s forwards;
@@ -167,7 +172,6 @@
     .qf-icon{font-size:16px;}
     .qf-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
     .qf-val{font-size:13px;color:var(--text);font-weight:500;}
-
     section{padding:100px 80px;position:relative;z-index:1;}
     section+section{border-top:1px solid var(--border);}
     .section-label {
@@ -247,6 +251,8 @@
       footer{padding:24px;flex-direction:column;gap:10px;text-align:center;}
       .back-btn{left:20px;bottom:20px;}
       .nav-center{gap:18px;}
+      .theme-btn span{display:none;}
+      .theme-btn{padding:7px 10px;}
     }
     @media(max-width:600px){h1{font-size:46px;}.nav-center{display:none;}}
   </style>
@@ -265,10 +271,14 @@
     <li><a href="#awards">Awards</a></li>
   </ul>
   <div class="nav-right">
-    <button class="toggle" onclick="toggleTheme()" title="Toggle theme">
-      <i class="fas fa-sun" id="theme-icon"></i>
-    </button>
-    <a href="https://t.me/MrSanjar1337" target="_blank" class="nav-channel">Channel</a>
+    <div class="theme-toggle">
+      <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')" title="Dark mode">
+        <i class="fas fa-moon"></i><span>Dark</span>
+      </button>
+      <button class="theme-btn" id="btn-light" onclick="setTheme('light')" title="Light mode">
+        <i class="fas fa-sun"></i><span>Light</span>
+      </button>
+    </div>
   </div>
 </nav>
 
@@ -464,13 +474,12 @@
 </footer>
 
 <script>
-  function toggleTheme(){
-    const html=document.documentElement;
-    const icon=document.getElementById('theme-icon');
-    const isDark=html.getAttribute('data-theme')==='dark';
-    html.setAttribute('data-theme',isDark?'light':'dark');
-    icon.className=isDark?'fas fa-moon':'fas fa-sun';
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
   }
+
   const cursor=document.getElementById('cursor');
   const ring=document.getElementById('cursorRing');
   let mx=0,my=0,rx=0,ry=0;
