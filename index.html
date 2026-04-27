@@ -125,7 +125,6 @@
           width:120px; height:120px; border-radius:50%;
           object-fit:cover; display:block;
           position:relative; z-index:1;
-          /* colorful: remove grayscale, add vibrant contrast */
           filter:contrast(1.08) saturate(1.15) brightness(1.02);
         }
         .photo-init {
@@ -238,7 +237,6 @@
     <span class="nav-logo">Sanjar's Blog</span>
     <div class="nav-right">
         <button class="toggle-btn" id="themeBtn"><i class="fas fa-sun" id="themeIco"></i></button>
-        <a href="https://t.me/MrSanjar1337" class="nav-cta"><span>CHANNEL ↗</span></a>
     </div>
 </nav>
 
@@ -338,9 +336,8 @@
 
     /* ── Ticker: stars only ── */
     const track=document.getElementById('ticker');
-    // 40 stars spaced across the ticker
     const stars='★'.repeat(40).split('').map(s=>`<span>${s}</span>`).join('');
-    track.innerHTML=stars+stars; // doubled for seamless loop
+    track.innerHTML=stars+stars;
 
     /* ── Canvas: Particle Web ── */
     const cvs=document.getElementById('c');
