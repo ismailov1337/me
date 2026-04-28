@@ -52,7 +52,6 @@
           width:90px;
           height:90px;
         }
-        /* FIX: avatar-placeholder now just a container; image fills it */
         .avatar-placeholder{
           width:90px;
           height:90px;
@@ -67,13 +66,12 @@
           font-weight:700;
           color:var(--orange);
         }
-        /* FIX: image inside placeholder fills the container properly */
         .avatar-placeholder img{
           width:100%;
           height:100%;
           object-fit:cover;
           display:block;
-          border-radius:0; /* parent handles radius */
+          border-radius:0;
         }
         .online-badge{
           position:absolute;
@@ -167,7 +165,7 @@
           border:1px solid var(--border);
           border-radius:2px;
           margin-bottom:12px;
-          overflow:hidden; /* FIX: prevents child borders from bleeding */
+          overflow:hidden;
         }
         .panel:last-child{margin-bottom:0;}
         .panel-head{
@@ -193,7 +191,7 @@
           text-decoration:none;
           color:var(--text);
           transition:background .12s;
-          cursor:default; /* FIX: default cursor for non-link rows */
+          cursor:default;
         }
         a.account-row{cursor:pointer;}
         .account-row:last-child{border-bottom:none;}
@@ -205,16 +203,15 @@
           flex-shrink:0;
         }
         .acc-icon svg{width:18px;height:18px;}
-        .acc-info{flex:1;min-width:0;} /* FIX: min-width:0 prevents overflow */
+        .acc-info{flex:1;min-width:0;}
         .acc-platform{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;}
         .acc-value{
           font-size:13px;
           font-weight:600;
           white-space:nowrap;
           overflow:hidden;
-          text-overflow:ellipsis; /* FIX: truncate long trade link text */
+          text-overflow:ellipsis;
         }
-        /* FIX: trade link value gets smaller mono font */
         .acc-value.mono{
           font-family:'Roboto Mono',monospace;
           font-size:10px;
@@ -234,7 +231,7 @@
           transition:color .15s, border-color .15s;
           text-decoration:none;
           white-space:nowrap;
-          flex-shrink:0; /* FIX: buttons don't shrink */
+          flex-shrink:0;
         }
         .acc-action:hover{color:var(--text);border-color:var(--dim);}
         .acc-action.done{color:var(--green);border-color:#3a4a3a;}
@@ -284,23 +281,20 @@
           justify-content:center;
           position:relative;
         }
-        /* FIX: proper crosshair rendering using a single centered container */
         .crosshair-inner{
           position:relative;
           width:24px;
           height:24px;
         }
-        /* Horizontal left bar */
         .ch-h{
           position:absolute;
           height:2px;
           background:#fff;
           width:6px;
           top:50%;
-          right:calc(50% + 2px); /* gap -4 means bars are 2px from center */
+          right:calc(50% + 2px);
           transform:translateY(-50%);
         }
-        /* Horizontal right bar */
         .ch-h2{
           position:absolute;
           height:2px;
@@ -310,7 +304,6 @@
           left:calc(50% + 2px);
           transform:translateY(-50%);
         }
-        /* Vertical top bar */
         .ch-v{
           position:absolute;
           width:2px;
@@ -320,7 +313,6 @@
           bottom:calc(50% + 2px);
           transform:translateX(-50%);
         }
-        /* Vertical bottom bar */
         .ch-v2{
           position:absolute;
           width:2px;
@@ -402,7 +394,6 @@
 <div class="profile-header">
     <div class="profile-header-inner">
         <div class="profile-top">
-            <!-- FIX: avatar-wrap holds badge; placeholder holds image properly -->
             <div class="avatar-wrap">
                 <div class="avatar-placeholder">
                     <img src="avatar.jpg" alt="sanj1k avatar" onerror="this.parentElement.textContent='S'"/>
@@ -449,7 +440,6 @@
                 <span class="acc-action">Visit →</span>
             </a>
 
-            <!-- FIX: non-link rows use <div>, not <a> -->
             <div class="account-row">
                 <div class="acc-icon" style="background:#1a1a2e;">
                     <svg viewBox="0 0 24 24" fill="#d13639"><path d="M0 1.168l2.54 16.478L9.375 19.5v-2.953l-4.41-.959L3.47 7.031h9.063V4.078H3.086L2.705 1.168H0zm8.297 9.89h7.57l-.453 5.024-3.289.885-3.289-.885-.214-2.39H6.41l.39 4.418 5.434 1.497 5.432-1.497.764-8.546H8.506l-.21-2.344h10.476l.207-2.953H5.879l.418 6.79z"/></svg>
@@ -461,14 +451,38 @@
                 <button class="acc-action" id="copyRiot" onclick="copy('sanjik#1337','copyRiot')">Copy ID</button>
             </div>
 
+            <!-- FACEIT -->
+            <a class="account-row" href="https://www.faceit.com/en/players/sanj1k1337" target="_blank" rel="noopener noreferrer">
+                <div class="acc-icon" style="background:#2a1a0e;">
+                    <!-- FACEIT logo mark (stylised F) -->
+                    <svg viewBox="0 0 24 24" fill="#ff5500"><path d="M3 2h18v3.5H7.5V10H17v3.5H7.5V22H3V2z"/></svg>
+                </div>
+                <div class="acc-info">
+                    <div class="acc-platform">FACEIT</div>
+                    <div class="acc-value">sanj1k1337</div>
+                </div>
+                <span class="acc-action">Visit →</span>
+            </a>
+
+            <!-- FASTCUP CS 1.6 -->
+            <a class="account-row" href="https://cs.fastcup.net/sanj1k" target="_blank" rel="noopener noreferrer">
+                <div class="acc-icon" style="background:#0d1a2e;">
+                    <!-- Cup / trophy icon -->
+                    <svg viewBox="0 0 24 24" fill="#3b8beb"><path d="M7 2v2H4v4c0 2.21 1.79 4 4 4h.18C8.85 13.27 10.32 14.5 12 14.91V17h-2v2h8v-2h-2v-2.09c1.68-.41 3.15-1.64 3.82-3.91H20c2.21 0 4-1.79 4-4V4h-3V2H7zm-3 4h3v4c-1.66 0-3-1.34-3-3V6zm16 1c0 1.66-1.34 3-3 3V6h3v1z"/></svg>
+                </div>
+                <div class="acc-info">
+                    <div class="acc-platform">FastCup · CS 1.6</div>
+                    <div class="acc-value">sanj1k</div>
+                </div>
+                <span class="acc-action">Visit →</span>
+            </a>
+
             <div class="account-row">
                 <div class="acc-icon" style="background:#1e2a3a;">
-                    <!-- FIX: better trade icon -->
                     <svg viewBox="0 0 24 24" fill="#4b9fd4"><path d="M7 4v2H4v13h16V6h-3V4H7zm0 2h10v11H7V6zM9 9v2h6V9H9zm0 4v2h6v-2H9z"/></svg>
                 </div>
                 <div class="acc-info">
                     <div class="acc-platform">Steam Trade Link</div>
-                    <!-- FIX: mono class for styled trade link display -->
                     <div class="acc-value mono">partner=778967474&amp;token=77mPlRxl</div>
                 </div>
                 <button class="acc-action" id="copyTrade" onclick="copy('https://steamcommunity.com/tradeoffer/new/?partner=778967474&token=77mPlRxl','copyTrade')">Copy</button>
@@ -626,7 +640,6 @@
         <div class="panel">
             <div class="panel-head">Crosshair</div>
             <div class="crosshair-box">
-                <!-- FIX: proper crosshair preview with centered inner element -->
                 <div class="crosshair-preview">
                     <div class="crosshair-inner">
                         <div class="ch-h"></div>
@@ -676,7 +689,6 @@
 </div>
 
 <script>
-    // Toast notification
     const toast = document.getElementById('toast');
     let toastTimer;
 
@@ -686,7 +698,6 @@
         toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    // FIX: robust copy function with fallback for older browsers
     function copy(text, btnId) {
         const btn = document.getElementById(btnId);
 
@@ -704,7 +715,6 @@
         };
 
         const onFail = () => {
-            // Fallback: create temporary textarea
             const ta = document.createElement('textarea');
             ta.value = text;
             ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
