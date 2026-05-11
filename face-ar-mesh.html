@@ -3,82 +3,102 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Face AR Neon Mesh</title>
+<title>Hand AR Neon Mesh</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: monospace; color: #fff; }
-  h1 { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: #888; margin-bottom: 16px; }
-  #container { position: relative; width: 640px; height: 480px; border-radius: 8px; overflow: hidden; }
-  #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-  #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
-  #status { position: absolute; top: 10px; left: 10px; font-size: 11px; color: #0f0; letter-spacing: 1px; z-index: 10; }
-  #controls { margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-  button { background: transparent; border: 1px solid #333; color: #aaa; padding: 8px 18px; font-family: monospace; font-size: 12px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; border-radius: 4px; transition: all 0.2s; }
-  button:hover, button.active { border-color: #0ff; color: #0ff; }
-  #stats { position: absolute; top: 10px; right: 10px; font-size: 11px; color: #0f0; text-align: right; z-index: 10; }
-  #fps-display { font-size: 11px; color: #555; margin-top: 8px; }
+  h1 { font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #555; margin-bottom: 14px; }
+  #container { position: relative; width: 640px; height: 480px; border-radius: 10px; overflow: hidden; background: #0a0a0a; border: 1px solid #1a1a1a; }
+  video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+  #status { position: absolute; top: 10px; left: 12px; font-size: 11px; letter-spacing: 1px; z-index: 10; padding: 4px 10px; border-radius: 4px; background: rgba(0,0,0,0.65); }
+  #hand-info { position: absolute; bottom: 12px; left: 12px; font-size: 11px; color: #888; letter-spacing: 1px; z-index: 10; }
+  #controls { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  button { background: transparent; border: 1px solid #2a2a2a; color: #666; padding: 7px 16px; font-family: monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; border-radius: 4px; transition: all 0.15s; }
+  button:hover { border-color: #444; color: #aaa; }
+  button.active { border-color: #0ff; color: #0ff; box-shadow: 0 0 8px rgba(0,255,255,0.2); }
+  #log { margin-top: 10px; font-size: 11px; color: #444; max-width: 640px; text-align: center; }
 </style>
 </head>
 <body>
-<h1>Face AR &mdash; Neon Mesh</h1>
+<h1>Hand AR — Neon Skeleton</h1>
 <div id="container">
   <video id="video" autoplay muted playsinline></video>
   <canvas id="canvas" width="640" height="480"></canvas>
-  <div id="status">Initializing...</div>
-  <div id="stats"></div>
+  <div id="status" style="color:#ff0">Loading...</div>
+  <div id="hand-info"></div>
 </div>
 <div id="controls">
-  <button id="btn-mesh" class="active" onclick="toggleMode('mesh')">Mesh</button>
-  <button id="btn-contour" onclick="toggleMode('contour')">Contour</button>
-  <button id="btn-iris" onclick="toggleMode('iris')">Iris</button>
-  <button id="btn-all" onclick="toggleMode('all')">All</button>
-  <button id="btn-color" onclick="cycleColor()">Color Cycle</button>
+  <button id="btn-skeleton" class="active" onclick="setMode('skeleton')">Skeleton</button>
+  <button id="btn-web" onclick="setMode('web')">Web</button>
+  <button id="btn-dots" onclick="setMode('dots')">Dots</button>
+  <button id="btn-all" onclick="setMode('all')">All</button>
+  <button onclick="cycleColor()">⬤ Color</button>
 </div>
-<div id="fps-display">FPS: --</div>
+<div id="log">Open in Chrome or run via localhost for camera access</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1632090166/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js" crossorigin="anonymous"></script>
 
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const statusEl = document.getElementById('status');
-const statsEl = document.getElementById('stats');
-const fpsEl = document.getElementById('fps-display');
+const handInfoEl = document.getElementById('hand-info');
+const logEl = document.getElementById('log');
 
-let mode = 'mesh';
-let colorScheme = 0;
-let frameCount = 0;
-let lastTime = performance.now();
-let faceDetected = false;
+let mode = 'skeleton';
+let colorIdx = 0;
 
-const colorSchemes = [
-  { mesh: '#ff2d78', contour: '#00e5ff', iris: '#ffe600', glow: 'rgba(255,45,120,0.15)' },
-  { mesh: '#00ff9f', contour: '#ff00ff', iris: '#00cfff', glow: 'rgba(0,255,159,0.12)' },
-  { mesh: '#ff9100', contour: '#00ff44', iris: '#ff2dff', glow: 'rgba(255,145,0,0.12)' },
-  { mesh: '#00cfff', contour: '#ff4d4d', iris: '#aaff00', glow: 'rgba(0,207,255,0.12)' },
+const palettes = [
+  { finger: ['#ff2d78','#ff6b35','#ffe600','#00ff9f','#00e5ff'], palm: '#ff2d78', web: '#ff006680', dot: '#fff' },
+  { finger: ['#00cfff','#00aaff','#0066ff','#aa00ff','#ff00cc'], palm: '#00cfff', web: '#00cfff40', dot: '#fff' },
+  { finger: ['#00ff9f','#aaff00','#ffff00','#ff9900','#ff3300'], palm: '#00ff9f', web: '#00ff9f40', dot: '#fff' },
+  { finger: ['#ff00ff','#cc00ff','#8800ff','#4400ff','#0000ff'], palm: '#ff00ff', web: '#ff00ff40', dot: '#fff' },
 ];
 
-function toggleMode(m) {
+// MediaPipe hand landmark indices
+// 0=wrist, 1-4=thumb, 5-8=index, 9-12=middle, 13-16=ring, 17-20=pinky
+const FINGERS = [
+  [0, 1, 2, 3, 4],       // thumb
+  [0, 5, 6, 7, 8],       // index
+  [0, 9, 10, 11, 12],    // middle
+  [0, 13, 14, 15, 16],   // ring
+  [0, 17, 18, 19, 20],   // pinky
+];
+
+// Palm connections
+const PALM = [0, 5, 9, 13, 17, 0];
+
+// Fingertip indices for cross-finger web lines
+const TIPS = [4, 8, 12, 16, 20];
+const KNUCKLES = [2, 5, 9, 13, 17];
+const MID_KNUCKLES = [3, 6, 10, 14, 18];
+
+function setMode(m) {
   mode = m;
-  document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-  document.getElementById('btn-' + m).classList.add('active');
+  document.querySelectorAll('button[id]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn-' + m);
+  if (btn) btn.classList.add('active');
 }
 
 function cycleColor() {
-  colorScheme = (colorScheme + 1) % colorSchemes.length;
+  colorIdx = (colorIdx + 1) % palettes.length;
 }
 
-function drawNeonLine(x1, y1, x2, y2, color, width = 1, glow = 8) {
+function px(lms, i, W, H) {
+  return { x: lms[i].x * W, y: lms[i].y * H };
+}
+
+function neonLine(x1, y1, x2, y2, color, w, blur) {
   ctx.save();
-  ctx.shadowBlur = glow;
+  ctx.shadowBlur = blur;
   ctx.shadowColor = color;
   ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.globalAlpha = 0.85;
+  ctx.lineWidth = w;
+  ctx.globalAlpha = 0.92;
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
@@ -86,150 +106,176 @@ function drawNeonLine(x1, y1, x2, y2, color, width = 1, glow = 8) {
   ctx.restore();
 }
 
-function drawNeonPoint(x, y, color, r = 2) {
+function neonDot(x, y, color, r, blur) {
   ctx.save();
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = blur;
   ctx.shadowColor = color;
   ctx.fillStyle = color;
-  ctx.globalAlpha = 0.9;
+  ctx.globalAlpha = 1;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
 
-function lm(landmarks, i) {
-  return {
-    x: landmarks[i].x * canvas.width,
-    y: landmarks[i].y * canvas.height,
-  };
-}
+function drawHand(lms, handLabel) {
+  const W = 640, H = 480;
+  const cs = palettes[colorIdx];
 
-function drawFaceMesh(landmarks) {
-  const cs = colorSchemes[colorScheme];
-  const W = canvas.width, H = canvas.height;
+  // Draw palm base
+  if (mode === 'skeleton' || mode === 'all') {
+    for (let i = 0; i < PALM.length - 1; i++) {
+      const p1 = px(lms, PALM[i], W, H);
+      const p2 = px(lms, PALM[i + 1], W, H);
+      neonLine(p1.x, p1.y, p2.x, p2.y, cs.palm, 1.5, 12);
+    }
 
-  // Face mesh tessellation — use MediaPipe's FACEMESH_TESSELATION connections
-  if (mode === 'mesh' || mode === 'all') {
-    for (const [a, b] of FACEMESH_TESSELATION) {
-      const p1 = lm(landmarks, a);
-      const p2 = lm(landmarks, b);
-      drawNeonLine(p1.x, p1.y, p2.x, p2.y, cs.mesh, 0.5, 4);
+    // Draw each finger with per-finger color
+    FINGERS.forEach((finger, fi) => {
+      const color = cs.finger[fi];
+      for (let i = 0; i < finger.length - 1; i++) {
+        const p1 = px(lms, finger[i], W, H);
+        const p2 = px(lms, finger[i + 1], W, H);
+        // skip wrist-to-first for non-index fingers (already drawn in palm)
+        if (i === 0 && fi !== 1) {
+          // draw wrist to base knuckle
+          neonLine(p1.x, p1.y, p2.x, p2.y, color, 1, 8);
+        } else {
+          neonLine(p1.x, p1.y, p2.x, p2.y, color, 1.8, 14);
+        }
+      }
+    });
+  }
+
+  // Cross-finger web lines (between adjacent fingertips and knuckles)
+  if (mode === 'web' || mode === 'all') {
+    // Connect adjacent fingertips
+    for (let i = 0; i < TIPS.length - 1; i++) {
+      const p1 = px(lms, TIPS[i], W, H);
+      const p2 = px(lms, TIPS[i + 1], W, H);
+      neonLine(p1.x, p1.y, p2.x, p2.y, cs.web.replace('40','99'), 0.8, 8);
+    }
+    // Connect adjacent knuckles
+    for (let i = 0; i < KNUCKLES.length - 1; i++) {
+      const p1 = px(lms, KNUCKLES[i], W, H);
+      const p2 = px(lms, KNUCKLES[i + 1], W, H);
+      neonLine(p1.x, p1.y, p2.x, p2.y, cs.palm + '66', 0.8, 6);
+    }
+    // Connect adjacent mid knuckles
+    for (let i = 0; i < MID_KNUCKLES.length - 1; i++) {
+      const p1 = px(lms, MID_KNUCKLES[i], W, H);
+      const p2 = px(lms, MID_KNUCKLES[i + 1], W, H);
+      neonLine(p1.x, p1.y, p2.x, p2.y, cs.palm + '44', 0.7, 5);
+    }
+    // Diagonal cross lines tip-to-knuckle (creates the mesh look)
+    for (let i = 0; i < TIPS.length - 1; i++) {
+      const tip1 = px(lms, TIPS[i], W, H);
+      const knuckle2 = px(lms, KNUCKLES[i + 1], W, H);
+      neonLine(tip1.x, tip1.y, knuckle2.x, knuckle2.y, cs.finger[i] + '55', 0.6, 4);
+
+      const tip2 = px(lms, TIPS[i + 1], W, H);
+      const knuckle1 = px(lms, KNUCKLES[i], W, H);
+      neonLine(tip2.x, tip2.y, knuckle1.x, knuckle1.y, cs.finger[i + 1] + '55', 0.6, 4);
     }
   }
 
-  // Face oval / contour
-  if (mode === 'contour' || mode === 'all') {
-    const contour = FACEMESH_FACE_OVAL;
-    for (const [a, b] of contour) {
-      const p1 = lm(landmarks, a);
-      const p2 = lm(landmarks, b);
-      drawNeonLine(p1.x, p1.y, p2.x, p2.y, cs.contour, 1.5, 14);
-    }
-    // Lips
-    for (const [a, b] of FACEMESH_LIPS) {
-      const p1 = lm(landmarks, a);
-      const p2 = lm(landmarks, b);
-      drawNeonLine(p1.x, p1.y, p2.x, p2.y, cs.iris, 1.2, 10);
+  // Landmark dots
+  if (mode === 'dots' || mode === 'all' || mode === 'skeleton') {
+    for (let i = 0; i < 21; i++) {
+      const p = px(lms, i, W, H);
+      // fingertips are bigger
+      const isTip = TIPS.includes(i);
+      const fingerIdx = FINGERS.findIndex(f => f.includes(i));
+      const color = fingerIdx >= 0 ? cs.finger[fingerIdx] : cs.palm;
+      neonDot(p.x, p.y, color, isTip ? 4 : 2.5, isTip ? 16 : 8);
+      // white center dot on tips
+      if (isTip) neonDot(p.x, p.y, '#ffffff', 1.5, 0);
     }
   }
 
-  // Irises
-  if (mode === 'iris' || mode === 'all') {
-    for (const [a, b] of FACEMESH_RIGHT_IRIS) {
-      const p1 = lm(landmarks, a);
-      const p2 = lm(landmarks, b);
-      drawNeonLine(p1.x, p1.y, p2.x, p2.y, cs.iris, 2, 18);
-    }
-    for (const [a, b] of FACEMESH_LEFT_IRIS) {
-      const p1 = lm(landmarks, a);
-      const p2 = lm(landmarks, b);
-      drawNeonLine(p1.x, p1.y, p2.x, p2.y, cs.iris, 2, 18);
-    }
-    // Eye contours
-    for (const [a, b] of [...FACEMESH_RIGHT_EYE, ...FACEMESH_LEFT_EYE]) {
-      const p1 = lm(landmarks, a);
-      const p2 = lm(landmarks, b);
-      drawNeonLine(p1.x, p1.y, p2.x, p2.y, cs.contour, 1, 12);
-    }
-  }
-
-  // Key landmark dots
-  const keyPoints = [1, 4, 6, 8, 10, 33, 133, 362, 263, 61, 291, 17, 0, 267, 37];
-  for (const i of keyPoints) {
-    const p = lm(landmarks, i);
-    drawNeonPoint(p.x, p.y, cs.iris, 2.5);
-  }
+  // Hand label
+  const wrist = px(lms, 0, W, H);
+  ctx.save();
+  ctx.font = '11px monospace';
+  ctx.fillStyle = cs.palm;
+  ctx.globalAlpha = 0.7;
+  ctx.fillText(handLabel.toUpperCase(), wrist.x - 16, wrist.y + 20);
+  ctx.restore();
 }
 
 function onResults(results) {
-  // FPS
-  frameCount++;
-  const now = performance.now();
-  if (now - lastTime > 500) {
-    fpsEl.textContent = 'FPS: ' + Math.round(frameCount / ((now - lastTime) / 1000));
-    frameCount = 0;
-    lastTime = now;
-  }
+  ctx.clearRect(0, 0, 640, 480);
+  ctx.drawImage(results.image, 0, 0, 640, 480);
+  ctx.fillStyle = 'rgba(0,0,0,0.52)';
+  ctx.fillRect(0, 0, 640, 480);
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Draw dark overlay on video feed
-  ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-    faceDetected = true;
-    statusEl.textContent = 'FACE DETECTED';
-    statusEl.style.color = '#0f0';
-    statsEl.textContent = `Landmarks: ${results.multiFaceLandmarks[0].length}\nFaces: ${results.multiFaceLandmarks.length}`;
-    for (const landmarks of results.multiFaceLandmarks) {
-      drawFaceMesh(landmarks);
-    }
-  } else {
-    faceDetected = false;
-    statusEl.textContent = 'SCANNING...';
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    statusEl.textContent = 'Show your hands';
     statusEl.style.color = '#f90';
-    statsEl.textContent = '';
+    handInfoEl.textContent = '';
+    return;
   }
+
+  statusEl.textContent = '● TRACKING';
+  statusEl.style.color = '#0f0';
+  handInfoEl.textContent = results.multiHandLandmarks.length + ' hand' + (results.multiHandLandmarks.length > 1 ? 's' : '') + ' detected';
+
+  results.multiHandLandmarks.forEach((lms, i) => {
+    const label = results.multiHandedness?.[i]?.label || 'Hand';
+    drawHand(lms, label);
+  });
 }
 
-async function init() {
-  statusEl.textContent = 'Loading MediaPipe...';
-  const faceMesh = new FaceMesh({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-  });
+async function start() {
+  if (typeof Hands === 'undefined') {
+    statusEl.textContent = 'Script load failed';
+    statusEl.style.color = '#f00';
+    logEl.textContent = 'MediaPipe Hands could not load. Use Chrome + internet connection.';
+    return;
+  }
 
-  faceMesh.setOptions({
-    maxNumFaces: 2,
-    refineLandmarks: true,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5,
-  });
+  statusEl.textContent = 'Requesting camera...';
+  statusEl.style.color = '#ff0';
 
-  faceMesh.onResults(onResults);
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+  } catch (e) {
+    statusEl.textContent = 'Camera blocked: ' + e.message;
+    statusEl.style.color = '#f00';
+    logEl.textContent = 'Allow camera access then reload. In Safari: Develop → Disable Local File Restrictions.';
+    return;
+  }
 
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
   video.srcObject = stream;
   await new Promise(r => video.onloadedmetadata = r);
-  statusEl.textContent = 'Camera active — scanning...';
+  logEl.textContent = 'Camera active — show your hands!';
+  statusEl.textContent = 'Initializing model...';
+
+  const hands = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
+  });
+
+  hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.6,
+  });
+
+  hands.onResults(onResults);
 
   const camera = new Camera(video, {
-    onFrame: async () => {
-      await faceMesh.send({ image: video });
-    },
+    onFrame: async () => { await hands.send({ image: video }); },
     width: 640,
     height: 480,
   });
+
   camera.start();
+  logEl.textContent = 'Running — show your hands to camera!';
 }
 
-init().catch(err => {
-  statusEl.textContent = 'Error: ' + err.message;
-  statusEl.style.color = '#f00';
-  console.error(err);
-});
+start();
 </script>
 </body>
 </html>
