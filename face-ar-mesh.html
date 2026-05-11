@@ -1,453 +1,470 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Full AR — Lightning Hands</title>
+<title>Hand AR Neon Mesh</title>
+<title>Full AR — Face + Hands</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: monospace; color: #fff; overflow: hidden; }
-  h1 { font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: #333; margin-bottom: 10px; }
-  #container { position: relative; width: 640px; height: 480px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 0 60px rgba(100,0,255,0.2); }
-  video  { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-  canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
-  #status { position: absolute; top: 10px; left: 12px; font-size: 10px; letter-spacing: 2px; z-index: 10; padding: 3px 10px; border-radius: 20px; background: rgba(0,0,0,0.7); border: 1px solid #222; }
-  #energy-bar-wrap { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 200px; height: 4px; background: #111; border-radius: 2px; z-index: 10; }
-  #energy-bar { height: 100%; width: 0%; border-radius: 2px; background: linear-gradient(90deg,#7700ff,#00e5ff); transition: background 0.1s; box-shadow: 0 0 8px #00e5ff; }
-  #power-label { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); font-size: 9px; letter-spacing: 3px; color: #333; z-index: 10; white-space: nowrap; }
-  #controls { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-  button { background: transparent; border: 1px solid #1a1a1a; color: #444; padding: 5px 12px; font-family: monospace; font-size: 9px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; border-radius: 20px; transition: all 0.15s; }
-  button:hover { border-color: #444; color: #aaa; }
-  button.active { border-color: #7700ff; color: #aa44ff; box-shadow: 0 0 8px rgba(119,0,255,0.3); }
-  #log { margin-top: 8px; font-size: 9px; color: #222; max-width: 640px; text-align: center; letter-spacing: 1px; }
-  #flash { position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 0; background: radial-gradient(ellipse at center, rgba(150,80,255,0.4) 0%, transparent 70%); transition: opacity 0.05s; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: monospace; color: #fff; }
+  h1 { font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #555; margin-bottom: 14px; }
+  #container { position: relative; width: 640px; height: 480px; border-radius: 10px; overflow: hidden; background: #0a0a0a; border: 1px solid #1a1a1a; }
+  h1 { font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: #444; margin-bottom: 12px; }
+  #container { position: relative; width: 640px; height: 480px; border-radius: 10px; overflow: hidden; background: #050505; border: 1px solid #111; }
+video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+  #status { position: absolute; top: 10px; left: 12px; font-size: 11px; letter-spacing: 1px; z-index: 10; padding: 4px 10px; border-radius: 4px; background: rgba(0,0,0,0.65); }
+  #hand-info { position: absolute; bottom: 12px; left: 12px; font-size: 11px; color: #888; letter-spacing: 1px; z-index: 10; }
+  #controls { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  button { background: transparent; border: 1px solid #2a2a2a; color: #666; padding: 7px 16px; font-family: monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; border-radius: 4px; transition: all 0.15s; }
+  #status { position: absolute; top: 10px; left: 12px; font-size: 11px; letter-spacing: 1px; z-index: 10; padding: 4px 10px; border-radius: 4px; background: rgba(0,0,0,0.7); }
+  #info { position: absolute; bottom: 10px; left: 12px; font-size: 10px; color: #666; z-index: 10; letter-spacing: 1px; }
+  #controls { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  button { background: transparent; border: 1px solid #222; color: #555; padding: 6px 14px; font-family: monospace; font-size: 10px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; border-radius: 4px; transition: all 0.15s; }
+button:hover { border-color: #444; color: #aaa; }
+  button.active { border-color: #0ff; color: #0ff; box-shadow: 0 0 8px rgba(0,255,255,0.2); }
+  #log { margin-top: 10px; font-size: 11px; color: #444; max-width: 640px; text-align: center; }
+  button.active { border-color: #0ff; color: #0ff; box-shadow: 0 0 6px rgba(0,255,255,0.15); }
+  #log { margin-top: 8px; font-size: 10px; color: #333; max-width: 640px; text-align: center; }
 </style>
 </head>
 <body>
-<h1>⚡ AR Lightning — Face + Hands</h1>
+<h1>Hand AR — Neon Skeleton</h1>
+<h1>Full AR — Face + Hands + Cross-Connect</h1>
 <div id="container">
-  <video id="video" autoplay muted playsinline></video>
-  <canvas id="canvas" width="640" height="480"></canvas>
-  <div id="flash"></div>
-  <div id="status" style="color:#ff0">Starting...</div>
-  <div id="power-label">POWER</div>
-  <div id="energy-bar-wrap"><div id="energy-bar"></div></div>
+<video id="video" autoplay muted playsinline></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+<div id="status" style="color:#ff0">Starting...</div>
+  <div id="hand-info"></div>
+  <div id="info"></div>
 </div>
 <div id="controls">
+  <button id="btn-skeleton" class="active" onclick="setMode('skeleton')">Skeleton</button>
+  <button id="btn-web" onclick="setMode('web')">Web</button>
+  <button id="btn-dots" onclick="setMode('dots')">Dots</button>
+  <button id="btn-all" onclick="setMode('all')">All</button>
   <button id="btn-hands" class="active" onclick="toggle('hands')">Hands</button>
-  <button id="btn-lightning" class="active" onclick="toggle('lightning')">⚡ Lightning</button>
-  <button id="btn-particles" class="active" onclick="toggle('particles')">Particles</button>
+  <button id="btn-cross" class="active" onclick="toggle('cross')">Cross-Connect</button>
   <button id="btn-face" class="active" onclick="toggle('face')">Face</button>
   <button id="btn-dark" class="active" onclick="toggle('dark')">Dark BG</button>
-  <button onclick="cycleColor()">⬤ Color</button>
+<button onclick="cycleColor()">⬤ Color</button>
 </div>
+<div id="log">Loading...</div>
 <div id="log">Loading MediaPipe Holistic...</div>
 
+<script src="https://unpkg.com/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@mediapipe/holistic@0.5.1675471629/holistic.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@mediapipe/camera_utils@0.3.1632090166/camera_utils.js" crossorigin="anonymous"></script>
 
 <script>
-const video    = document.getElementById('video');
-const canvas   = document.getElementById('canvas');
-const ctx      = canvas.getContext('2d');
+const video = document.getElementById('video');
+const video  = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const ctx    = canvas.getContext('2d');
 const statusEl = document.getElementById('status');
+const handInfoEl = document.getElementById('hand-info');
+const logEl = document.getElementById('log');
+const infoEl   = document.getElementById('info');
 const logEl    = document.getElementById('log');
-const flashEl  = document.getElementById('flash');
-const energyBar= document.getElementById('energy-bar');
 
-const W = 640, H = 480;
-
-const layers = { hands:true, lightning:true, particles:true, face:true, dark:true };
+let mode = 'skeleton';
+let colorIdx = 0;
+// toggleable layers
+const layers = { hands: true, cross: true, face: true, dark: true };
 function toggle(k) {
-  layers[k]=!layers[k];
-  document.getElementById('btn-'+k).classList.toggle('active',layers[k]);
+  layers[k] = !layers[k];
+  document.getElementById('btn-'+k).classList.toggle('active', layers[k]);
 }
 
-let colorIdx=0;
-const palettes=[
-  { L:['#ff2d78','#ff6b35','#ffe600','#00ff9f','#00e5ff'], R:['#aa44ff','#7700ff','#5500cc','#3300aa','#aa00ff'], face:'#ff2d78', bolt:'#ffffff', boltGlow:'#aa66ff', spark:'#ffee00' },
-  { L:['#00ffff','#00ccff','#0088ff','#0044ff','#00aaff'], R:['#ff4400','#ff7700','#ffaa00','#ffdd00','#ff2200'], face:'#00ffff', bolt:'#ffffff', boltGlow:'#00ffff', spark:'#ffffff' },
-  { L:['#00ff9f','#aaff00','#ffff00','#ff9900','#ff4400'], R:['#ff00ff','#cc00ff','#8800ff','#4488ff','#00ffcc'], face:'#00ff9f', bolt:'#ffffff', boltGlow:'#00ff9f', spark:'#ffff00' },
+let colorIdx = 0;
+const palettes = [
+  { finger: ['#ff2d78','#ff6b35','#ffe600','#00ff9f','#00e5ff'], palm: '#ff2d78' },
+  { finger: ['#00cfff','#00aaff','#0066ff','#aa00ff','#ff00cc'], palm: '#00cfff' },
+  { finger: ['#00ff9f','#aaff00','#ffff00','#ff9900','#ff3300'], palm: '#00ff9f' },
+  { finger: ['#ff00ff','#cc00ff','#8800ff','#ff4488','#ff0000'], palm: '#ff00ff' },
+  { L: ['#ff2d78','#ff6b35','#ffe600','#00ff9f','#00e5ff'], R: ['#00cfff','#00aaff','#0077ff','#aa00ff','#ff00cc'], face: '#ff2d78', cross: '#ffffff' },
+  { L: ['#00ff9f','#aaff00','#ffff00','#ff9900','#ff3300'], R: ['#ff00ff','#cc00ff','#8800ff','#4488ff','#00ffcc'], face: '#00ff9f', cross: '#ffffff' },
+  { L: ['#ff00ff','#ff0088','#ff4400','#ffaa00','#ffff00'], R: ['#00ffff','#00aaff','#0044ff','#8800ff','#ff00ff'], face: '#ff00ff', cross: '#00ffff' },
+  { L: ['#ffffff','#dddddd','#aaaaaa','#888888','#555555'], R: ['#00e5ff','#00aacc','#007799','#004466','#002233'], face: '#aaaaaa', cross: '#00e5ff' },
 ];
-function cycleColor(){ colorIdx=(colorIdx+1)%palettes.length; }
 
-// ─── Particle system ───
-const particles=[];
-function spawnParticles(x,y,color,count=6){
-  for(let i=0;i<count;i++){
-    const angle=Math.random()*Math.PI*2;
-    const speed=1+Math.random()*3;
-    particles.push({
-      x,y,
-      vx:Math.cos(angle)*speed,
-      vy:Math.sin(angle)*speed,
-      life:1,
-      decay:0.02+Math.random()*0.04,
-      r:2+Math.random()*3,
-      color
-    });
-  }
-}
-function updateParticles(){
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];
-    p.x+=p.vx; p.y+=p.vy;
-    p.vy+=0.05; // gravity
-    p.life-=p.decay;
-    if(p.life<=0){ particles.splice(i,1); continue; }
-    ctx.save();
-    ctx.globalAlpha=p.life*0.9;
-    ctx.shadowBlur=10; ctx.shadowColor=p.color;
-    ctx.fillStyle=p.color;
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
-}
+const FINGERS    = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
+const FBASES     = [1,5,9,13,17];
+const PALM_RING  = [0,1,5,9,13,17,0];
+const TIPS       = [4,8,12,16,20];
+const KNUCK_A    = [5,9,13,17];
+const KNUCK_B    = [6,10,14,18];
 
-// ─── Lightning bolt generator ───
-function lightningPath(x1,y1,x2,y2,roughness,segments){
-  const pts=[{x:x1,y:y1}];
-  for(let i=1;i<segments;i++){
-    const t=i/segments;
-    const mx=x1+(x2-x1)*t;
-    const my=y1+(y2-y1)*t;
-    const perp={x:-(y2-y1),y:(x2-x1)};
-    const len=Math.sqrt(perp.x**2+perp.y**2)||1;
-    const offset=(Math.random()-0.5)*roughness*(1-Math.abs(t-0.5)*2+0.3);
-    pts.push({ x:mx+perp.x/len*offset, y:my+perp.y/len*offset });
-  }
-  pts.push({x:x2,y:y2});
-  return pts;
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('button[id]').forEach(b => b.classList.remove('active'));
+  const b = document.getElementById('btn-'+m);
+  if (b) b.classList.add('active');
+}
+function cycleColor() { colorIdx = (colorIdx+1) % palettes.length; }
+
+function P(lms, i) { return { x: lms[i].x*640, y: lms[i].y*480 }; }
+// Hand landmark indices
+const FINGERS  = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
+const FBASES   = [1,5,9,13,17];
+const PALM_RING= [0,1,5,9,13,17,0];
+const TIPS     = [4,8,12,16,20];
+const KNUCK_A  = [5,9,13,17];
+const KNUCK_B  = [6,10,14,18];
+
+function line(x1,y1,x2,y2,color,w,blur) {
+// Face connections (subset — oval + eyes + lips + nose bridge)
+const FACE_OVAL   = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109,10];
+const LEFT_EYE    = [33,7,163,144,145,153,154,155,133,33];
+const RIGHT_EYE   = [362,382,381,380,374,373,390,249,263,362];
+const LEFT_BROW   = [46,53,52,65,55];
+const RIGHT_BROW  = [276,283,282,295,285];
+const LIPS_OUTER  = [61,84,17,314,405,320,307,306,291,409,270,269,267,0,37,39,40,61];
+const LIPS_INNER  = [78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,78];
+const NOSE_BRIDGE = [6,197,195,5,4,1,19,94,2];
+
+function P(lms, i, W=640, H=480) {
+  return { x: lms[i].x*W, y: lms[i].y*H };
 }
 
-function drawLightningBolt(x1,y1,x2,y2,color,glowColor,width,blur,roughness=40,segs=12,branches=true){
-  const pts=lightningPath(x1,y1,x2,y2,roughness,segs);
-
-  // Outer glow pass
-  ctx.save();
-  ctx.shadowBlur=blur*2; ctx.shadowColor=glowColor;
-  ctx.strokeStyle=glowColor; ctx.lineWidth=width*4; ctx.globalAlpha=0.15;
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
-  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
-  ctx.stroke(); ctx.restore();
-
-  // Mid glow
-  ctx.save();
-  ctx.shadowBlur=blur; ctx.shadowColor=glowColor;
-  ctx.strokeStyle=glowColor; ctx.lineWidth=width*2; ctx.globalAlpha=0.4;
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
-  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
-  ctx.stroke(); ctx.restore();
-
-  // Core bolt
-  ctx.save();
-  ctx.shadowBlur=blur/2; ctx.shadowColor=color;
-  ctx.strokeStyle=color; ctx.lineWidth=width; ctx.globalAlpha=0.95;
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
-  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
-  ctx.stroke(); ctx.restore();
-
-  // Random branches
-  if(branches){
-    for(let b=0;b<2;b++){
-      const si=2+Math.floor(Math.random()*(pts.length-4));
-      const sp=pts[si];
-      const angle=Math.atan2(y2-y1,x2-x1)+(Math.random()-0.5)*1.2;
-      const blen=30+Math.random()*60;
-      const ex=sp.x+Math.cos(angle)*blen;
-      const ey=sp.y+Math.sin(angle)*blen;
-      const bpts=lightningPath(sp.x,sp.y,ex,ey,15,5);
-      ctx.save();
-      ctx.shadowBlur=blur/2; ctx.shadowColor=glowColor;
-      ctx.strokeStyle=glowColor; ctx.lineWidth=width*0.5; ctx.globalAlpha=0.5;
-      ctx.lineCap='round';
-      ctx.beginPath(); ctx.moveTo(bpts[0].x,bpts[0].y);
-      for(let i=1;i<bpts.length;i++) ctx.lineTo(bpts[i].x,bpts[i].y);
-      ctx.stroke(); ctx.restore();
-    }
-  }
-}
-
-// ─── Hand drawing ───
-const FINGERS=[[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
-const FBASES=[1,5,9,13,17];
-const PALM_RING=[0,1,5,9,13,17,0];
-const TIPS=[4,8,12,16,20];
-const KNUCK_A=[5,9,13,17];
-const KNUCK_B=[6,10,14,18];
-
-function P(lms,i){ return {x:lms[i].x*W, y:lms[i].y*H}; }
-
-function line(x1,y1,x2,y2,color,w,blur,alpha=0.92){
-  ctx.save();
-  ctx.shadowBlur=blur; ctx.shadowColor=color;
+function line(x1,y1,x2,y2,color,w,blur,alpha=0.92) {
+ctx.save();
+ctx.shadowBlur=blur; ctx.shadowColor=color;
+  ctx.strokeStyle=color; ctx.lineWidth=w; ctx.globalAlpha=0.92;
   ctx.strokeStyle=color; ctx.lineWidth=w; ctx.globalAlpha=alpha;
-  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-  ctx.restore();
+ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+ctx.restore();
 }
-function dot(x,y,color,r,blur){
-  ctx.save();
-  ctx.shadowBlur=blur; ctx.shadowColor=color; ctx.fillStyle=color;
-  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-  ctx.restore();
+@@ -90,137 +101,251 @@ <h1>Hand AR — Neon Skeleton</h1>
+ctx.restore();
 }
-function polyline(lms,ids,color,w,blur,close=false){
-  if(!lms)return;
+
+function drawHand(lms, label) {
+function drawPolyline(lms, indices, color, w, blur, close=false) {
+  if (!lms) return;
   ctx.save();
   ctx.shadowBlur=blur; ctx.shadowColor=color;
   ctx.strokeStyle=color; ctx.lineWidth=w; ctx.globalAlpha=0.85;
-  ctx.lineCap='round'; ctx.lineJoin='round';
   ctx.beginPath();
-  const s=P(lms,ids[0]); ctx.moveTo(s.x,s.y);
-  for(let i=1;i<ids.length;i++){const p=P(lms,ids[i]);ctx.lineTo(p.x,p.y);}
-  if(close)ctx.closePath();
-  ctx.stroke(); ctx.restore();
+  const s = P(lms, indices[0]);
+  ctx.moveTo(s.x, s.y);
+  for (let i=1;i<indices.length;i++) {
+    const p = P(lms, indices[i]);
+    ctx.lineTo(p.x, p.y);
+  }
+  if (close) ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
 }
 
-function drawHand(lms,side){
-  if(!lms)return;
-  const cs=palettes[colorIdx];
-  const colors=side==='Left'?cs.L:cs.R;
-  const wrist=P(lms,0);
+function drawHand(lms, side) {
+  if (!lms) return;
+const cs = palettes[colorIdx];
+  const colors = side==='Left' ? cs.L : cs.R;
+const wrist = P(lms,0);
 
-  polyline(lms,PALM_RING,colors[0],1.5,12);
-  FINGERS.forEach((seg,fi)=>{
-    const c=colors[fi];
-    const base=P(lms,FBASES[fi]);
-    line(wrist.x,wrist.y,base.x,base.y,c,1.2,8);
-    for(let i=0;i<seg.length-1;i++){
-      const a=P(lms,seg[i]),b=P(lms,seg[i+1]);
-      line(a.x,a.y,b.x,b.y,c,2.5,18);
+  if (mode==='skeleton'||mode==='all') {
+    for (let i=0;i<PALM_RING.length-1;i++) {
+      const a=P(lms,PALM_RING[i]),b=P(lms,PALM_RING[i+1]);
+      line(a.x,a.y,b.x,b.y,cs.palm,1.5,12);
     }
+    FINGERS.forEach((seg,fi) => {
+      const color=cs.finger[fi];
+      const base=P(lms,FBASES[fi]);
+      line(wrist.x,wrist.y,base.x,base.y,color,1,6);
+      for (let i=0;i<seg.length-1;i++) {
+        const a=P(lms,seg[i]),b=P(lms,seg[i+1]);
+        line(a.x,a.y,b.x,b.y,color,2,14);
+      }
+    });
+  }
+
+  if (mode==='web'||mode==='all') {
+    for (let i=0;i<TIPS.length-1;i++) {
+      const a=P(lms,TIPS[i]),b=P(lms,TIPS[i+1]);
+      line(a.x,a.y,b.x,b.y,cs.finger[i]+'bb',1,8);
+    }
+    for (let i=0;i<KNUCK_A.length-1;i++) {
+      const a=P(lms,KNUCK_A[i]),b=P(lms,KNUCK_A[i+1]);
+      line(a.x,a.y,b.x,b.y,cs.palm+'88',0.8,6);
+    }
+    for (let i=0;i<KNUCK_B.length-1;i++) {
+      const a=P(lms,KNUCK_B[i]),b=P(lms,KNUCK_B[i+1]);
+      line(a.x,a.y,b.x,b.y,cs.palm+'55',0.7,5);
+    }
+    for (let i=0;i<TIPS.length-1;i++) {
+      const t1=P(lms,TIPS[i]),k2=P(lms,KNUCK_A[Math.min(i+1,KNUCK_A.length-1)]);
+      const t2=P(lms,TIPS[i+1]),k1=P(lms,KNUCK_A[i]);
+      line(t1.x,t1.y,k2.x,k2.y,cs.finger[i]+'44',0.6,4);
+      line(t2.x,t2.y,k1.x,k1.y,cs.finger[i+1]+'44',0.6,4);
+  // Palm ring
+  drawPolyline(lms, PALM_RING, colors[0], 1.2, 10, false);
+
+  // Fingers
+  FINGERS.forEach((seg, fi) => {
+    const c = colors[fi];
+    const base = P(lms, FBASES[fi]);
+    line(wrist.x,wrist.y,base.x,base.y,c,1,6);
+    for (let i=0;i<seg.length-1;i++) {
+      const a=P(lms,seg[i]), b=P(lms,seg[i+1]);
+      line(a.x,a.y,b.x,b.y,c,2,16);
+}
   });
-  for(let i=0;i<TIPS.length-1;i++){
+
+  // Cross-knuckle web lines
+  for (let i=0;i<TIPS.length-1;i++) {
     const a=P(lms,TIPS[i]),b=P(lms,TIPS[i+1]);
-    line(a.x,a.y,b.x,b.y,colors[i]+'aa',1,8);
+    line(a.x,a.y,b.x,b.y,colors[i]+'99',0.8,6);
   }
-  for(let i=0;i<KNUCK_A.length-1;i++){
+  for (let i=0;i<KNUCK_A.length-1;i++) {
     const a=P(lms,KNUCK_A[i]),b=P(lms,KNUCK_A[i+1]);
-    line(a.x,a.y,b.x,b.y,colors[0]+'77',0.8,5);
+    line(a.x,a.y,b.x,b.y,colors[0]+'66',0.7,4);
   }
-  for(let i=0;i<21;i++){
+  for (let i=0;i<KNUCK_B.length-1;i++) {
+    const a=P(lms,KNUCK_B[i]),b=P(lms,KNUCK_B[i+1]);
+    line(a.x,a.y,b.x,b.y,colors[1]+'44',0.6,3);
+}
+
+  if (mode==='dots'||mode==='skeleton'||mode==='all') {
+    for (let i=0;i<21;i++) {
+      const p=P(lms,i);
+      const fi=FINGERS.findIndex(f=>f.includes(i));
+      const color=fi>=0?cs.finger[fi]:cs.palm;
+      const isTip=TIPS.includes(i);
+      dot(p.x,p.y,color,isTip?4.5:2.5,isTip?18:8);
+      if(isTip) dot(p.x,p.y,'#ffffff',1.5,0);
+    }
+  // Dots
+  for (let i=0;i<21;i++) {
     const p=P(lms,i);
     const fi=FINGERS.findIndex(f=>f.includes(i));
     const c=fi>=0?colors[fi]:colors[0];
     const isTip=TIPS.includes(i);
-    dot(p.x,p.y,c,isTip?5:3,isTip?22:10);
-    if(isTip)dot(p.x,p.y,'#fff',2,0);
+    dot(p.x,p.y,c,isTip?4.5:2.5,isTip?18:8);
+    if(isTip) dot(p.x,p.y,'#fff',1.5,0);
   }
 }
 
-// ─── Cross-hand lightning ───
-let boltFrame=0;
-let lastEnergy=0;
+function drawCrossHands(leftLms, rightLms) {
+  if (!leftLms || !rightLms) return;
+  const cs = palettes[colorIdx];
 
-function drawCrossLightning(leftLms,rightLms){
-  if(!leftLms||!rightLms)return;
-  const cs=palettes[colorIdx];
-  boltFrame++;
+  // Connect each fingertip of left to corresponding fingertip of right
+  for (let i=0;i<TIPS.length;i++) {
+    const lp = P(leftLms, TIPS[i]);
+    const rp = P(rightLms, TIPS[i]);
+    line(lp.x,lp.y,rp.x,rp.y, cs.cross, 0.8, 12, 0.5);
+}
 
-  // Compute distance between index tips
-  const li=P(leftLms,8), ri=P(rightLms,8);
-  const dist=Math.sqrt((li.x-ri.x)**2+(li.y-ri.y)**2);
-  const maxDist=400;
-  const energy=Math.max(0,1-dist/maxDist); // 0..1, more energy = closer hands
-  lastEnergy=energy;
+  ctx.save();
+  ctx.font='11px monospace'; ctx.fillStyle=cs.palm; ctx.globalAlpha=0.6;
+  ctx.fillText(label.toUpperCase(),wrist.x-12,wrist.y+22);
+  ctx.restore();
+  // Connect thumbs specifically (bold)
+  const lt = P(leftLms,4), rt = P(rightLms,4);
+  line(lt.x,lt.y,rt.x,rt.y, cs.L[0], 1.5, 18, 0.7);
 
-  // Energy bar
-  energyBar.style.width=(energy*100)+'%';
-  const energyColor=energy>0.7?'#ff2d78':energy>0.4?'#ffee00':'#7700ff';
-  energyBar.style.background=`linear-gradient(90deg,#7700ff,${energyColor})`;
-  energyBar.style.boxShadow=`0 0 ${energy*20}px ${energyColor}`;
+  // Connect index tips
+  const li = P(leftLms,8), ri = P(rightLms,8);
+  line(li.x,li.y,ri.x,ri.y, cs.L[1], 1.5, 18, 0.7);
 
-  // Flash overlay when very close
-  if(energy>0.75){
-    flashEl.style.opacity=(energy-0.75)*4*0.6+'';
-    flashEl.style.background=`radial-gradient(ellipse at center, rgba(180,80,255,${energy*0.5}) 0%, transparent 70%)`;
-  } else {
-    flashEl.style.opacity='0';
+  // Connect wrists
+  const lw = P(leftLms,0), rw = P(rightLms,0);
+  line(lw.x,lw.y,rw.x,rw.y, cs.cross, 1, 8, 0.35);
+
+  // Cross-diagonal: left thumb to right index, left index to right thumb
+  line(lt.x,lt.y,ri.x,ri.y, cs.R[0], 0.7, 8, 0.4);
+  line(li.x,li.y,rt.x,rt.y, cs.L[0], 0.7, 8, 0.4);
+
+  // Connect knuckles across hands (each row)
+  for (let i=0;i<KNUCK_A.length;i++) {
+    const lk=P(leftLms,KNUCK_A[i]), rk=P(rightLms,KNUCK_A[i]);
+    line(lk.x,lk.y,rk.x,rk.y, cs.cross, 0.5, 5, 0.25);
   }
 
-  // Lightning bolts between fingertips — intensity based on energy
-  if(energy>0.05){
-    const pairs=[
-      [4,4],[8,8],[12,12],[16,16],[20,20], // thumb,index,middle,ring,pinky
-    ];
-    const roughness=80*(1-energy)+10; // less rough when closer
-    const numBolts=energy>0.6?3:energy>0.3?2:1;
+  // Connect middle tips of both hands
+  const lm=P(leftLms,12), rm=P(rightLms,12);
+  line(lm.x,lm.y,rm.x,rm.y, cs.L[2], 1.2, 14, 0.6);
 
-    pairs.forEach(([li_i,ri_i],pi)=>{
-      if(pi>=numBolts+1 && energy<0.5) return;
-      const lp=P(leftLms,li_i), rp=P(rightLms,ri_i);
-      if(boltFrame%2===0||energy>0.5){ // flicker
-        drawLightningBolt(
-          lp.x,lp.y,rp.x,rp.y,
-          '#ffffff',cs.boltGlow,
-          1+energy*2, 20+energy*30,
-          roughness, 10+Math.floor(energy*8),
-          energy>0.3
-        );
-      }
-      // Sparks at endpoints when high energy
-      if(energy>0.5 && Math.random()<0.4){
-        spawnParticles(lp.x,lp.y,cs.spark,4);
-        spawnParticles(rp.x,rp.y,cs.spark,4);
-      }
-    });
+  // Ring and pinky tips
+  const lr=P(leftLms,16), rr=P(rightLms,16);
+  line(lr.x,lr.y,rr.x,rr.y, cs.L[3], 1, 10, 0.5);
+  const lp2=P(leftLms,20), rp2=P(rightLms,20);
+  line(lp2.x,lp2.y,rp2.x,rp2.y, cs.L[4], 1, 10, 0.5);
+}
 
-    // Wrist-to-wrist base beam
-    const lw=P(leftLms,0), rw=P(rightLms,0);
-    if(energy>0.2){
-      drawLightningBolt(lw.x,lw.y,rw.x,rw.y,cs.boltGlow+'aa',cs.boltGlow,1+energy,10+energy*20,roughness*1.5,8,false);
-    }
+function drawFace(lms) {
+  if (!lms) return;
+  const cs = palettes[colorIdx];
+  const fc = cs.face;
 
-    // Arc from palm center to palm center
-    const lPalm=P(leftLms,9), rPalm=P(rightLms,9);
-    if(energy>0.35){
-      drawLightningBolt(lPalm.x,lPalm.y,rPalm.x,rPalm.y,'#ffffff',cs.boltGlow,2+energy*3,30+energy*40,roughness*0.7,12,true);
-    }
+  // Face oval
+  drawPolyline(lms, FACE_OVAL, fc+'88', 1.2, 14, false);
+  // Eyes
+  drawPolyline(lms, LEFT_EYE,  fc+'cc', 1, 10, true);
+  drawPolyline(lms, RIGHT_EYE, fc+'cc', 1, 10, true);
+  // Eyebrows
+  drawPolyline(lms, LEFT_BROW,  fc+'66', 0.8, 6);
+  drawPolyline(lms, RIGHT_BROW, fc+'66', 0.8, 6);
+  // Lips
+  drawPolyline(lms, LIPS_OUTER, fc+'aa', 1.2, 12, true);
+  drawPolyline(lms, LIPS_INNER, fc+'66', 0.8, 8, true);
+  // Nose bridge
+  drawPolyline(lms, NOSE_BRIDGE, fc+'55', 0.7, 5);
 
-    // Orb glow at fingertips when charged
-    if(energy>0.4){
-      [4,8].forEach(idx=>{
-        const lp2=P(leftLms,idx);
-        const rp2=P(rightLms,idx);
-        const orbR=energy*20;
-        ctx.save();
-        ctx.globalAlpha=energy*0.6;
-        const g1=ctx.createRadialGradient(lp2.x,lp2.y,0,lp2.x,lp2.y,orbR);
-        g1.addColorStop(0,'#ffffff'); g1.addColorStop(1,'transparent');
-        ctx.fillStyle=g1; ctx.beginPath(); ctx.arc(lp2.x,lp2.y,orbR,0,Math.PI*2); ctx.fill();
-        const g2=ctx.createRadialGradient(rp2.x,rp2.y,0,rp2.x,rp2.y,orbR);
-        g2.addColorStop(0,'#ffffff'); g2.addColorStop(1,'transparent');
-        ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(rp2.x,rp2.y,orbR,0,Math.PI*2); ctx.fill();
-        ctx.restore();
-      });
-    }
-  } else {
-    flashEl.style.opacity='0';
+  // Key dots: eyes corners, nose tip, chin
+  const keyPts = [33,133,362,263,1,152,61,291];
+  for (const i of keyPts) {
+    const p = P(lms,i);
+    dot(p.x,p.y,fc,2,12);
   }
 }
 
-// ─── Face ───
-const FACE_OVAL=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109,10];
-const LEFT_EYE=[33,7,163,144,145,153,154,155,133,33];
-const RIGHT_EYE=[362,382,381,380,374,373,390,249,263,362];
-const LEFT_BROW=[46,53,52,65,55];
-const RIGHT_BROW=[276,283,282,295,285];
-const LIPS_OUTER=[61,84,17,314,405,320,307,306,291,409,270,269,267,0,37,39,40,61];
-const LIPS_INNER=[78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,78];
-const NOSE_BRIDGE=[6,197,195,5,4,1,19,94,2];
+// Store last results for cross-hand drawing
+let lastLeft=null, lastRight=null;
 
-function drawFace(lms){
-  if(!lms)return;
-  const cs=palettes[colorIdx];
-  const fc=cs.face;
-  polyline(lms,FACE_OVAL,fc+'66',1,12);
-  polyline(lms,LEFT_EYE,fc+'cc',1.2,12,true);
-  polyline(lms,RIGHT_EYE,fc+'cc',1.2,12,true);
-  polyline(lms,LEFT_BROW,fc+'88',0.8,8);
-  polyline(lms,RIGHT_BROW,fc+'88',0.8,8);
-  polyline(lms,LIPS_OUTER,fc+'bb',1.5,14,true);
-  polyline(lms,LIPS_INNER,fc+'66',0.8,8,true);
-  polyline(lms,NOSE_BRIDGE,fc+'55',0.7,5);
-  [33,133,362,263,1,152,61,291].forEach(i=>{
-    const p=P(lms,i); dot(p.x,p.y,fc,2.5,14);
-  });
-}
+function onResults(results) {
+ctx.clearRect(0,0,640,480);
+ctx.drawImage(results.image,0,0,640,480);
+  ctx.fillStyle='rgba(0,0,0,0.52)';
+  ctx.fillRect(0,0,640,480);
 
-// ─── Main render ───
-function onResults(results){
-  ctx.clearRect(0,0,W,H);
-  ctx.drawImage(results.image,0,0,W,H);
-
-  if(layers.dark){
-    ctx.fillStyle='rgba(0,0,0,0.58)';
-    ctx.fillRect(0,0,W,H);
-  }
-
-  const leftLms =results.leftHandLandmarks||null;
-  const rightLms=results.rightHandLandmarks||null;
-  const faceLms =results.faceLandmarks||null;
-
-  let detected=[];
-
-  if(layers.face&&faceLms){drawFace(faceLms);detected.push('face');}
-
-  if(layers.hands){
-    if(leftLms) {drawHand(leftLms,'Left'); detected.push('L');}
-    if(rightLms){drawHand(rightLms,'Right');detected.push('R');}
-  }
-
-  if(layers.lightning&&leftLms&&rightLms){
-    drawCrossLightning(leftLms,rightLms);
-    detected.push('⚡');
-  }
-
-  if(layers.particles) updateParticles();
-
-  if(detected.length>0){
-    statusEl.textContent='● '+detected.join(' + ').toUpperCase();
-    statusEl.style.color='#0f0';
-  } else {
-    statusEl.textContent='Show hands / face';
+  if (!results.multiHandLandmarks||results.multiHandLandmarks.length===0) {
+    statusEl.textContent='Show your hands';
     statusEl.style.color='#f90';
-    flashEl.style.opacity='0';
-    energyBar.style.width='0%';
+    handInfoEl.textContent='';
+    return;
+  if (layers.dark) {
+    ctx.fillStyle='rgba(0,0,0,0.55)';
+    ctx.fillRect(0,0,640,480);
+}
+  statusEl.textContent='● TRACKING';
+  statusEl.style.color='#0f0';
+  handInfoEl.textContent=results.multiHandLandmarks.length+' hand'+(results.multiHandLandmarks.length>1?'s':'')+' detected';
+  results.multiHandLandmarks.forEach((lms,i)=>{
+    const label=results.multiHandedness?.[i]?.label||'Hand';
+    drawHand(lms,label);
+  });
+
+  // Identify left/right from holistic
+  // holistic gives leftHandLandmarks and rightHandLandmarks directly
+  const leftLms  = results.leftHandLandmarks  || null;
+  const rightLms = results.rightHandLandmarks || null;
+  if (leftLms)  lastLeft  = leftLms;
+  if (rightLms) lastRight = rightLms;
+
+  const faceLms = results.faceLandmarks || null;
+
+  let detected = [];
+
+  if (layers.hands) {
+    if (leftLms)  { drawHand(leftLms,  'Left');  detected.push('L hand'); }
+    if (rightLms) { drawHand(rightLms, 'Right'); detected.push('R hand'); }
   }
+
+  if (layers.cross && leftLms && rightLms) {
+    drawCrossHands(leftLms, rightLms);
+    detected.push('cross');
+  }
+
+  if (layers.face && faceLms) {
+    drawFace(faceLms);
+    detected.push('face');
+  }
+
+  if (detected.length > 0) {
+    statusEl.textContent = '● ' + detected.join(' + ').toUpperCase();
+    statusEl.style.color = '#0f0';
+  } else {
+    statusEl.textContent = 'Show hands / face';
+    statusEl.style.color = '#f90';
+  }
+
+  const handCount = (leftLms?1:0)+(rightLms?1:0);
+  infoEl.textContent = handCount > 0 ? handCount + ' hand'+(handCount>1?'s':'')+' detected' : '';
 }
 
-// ─── Boot ───
-async function start(){
-  let attempts=0;
-  while(typeof Holistic==='undefined'&&attempts<50){
-    await new Promise(r=>setTimeout(r,200)); attempts++;
-  }
-  if(typeof Holistic==='undefined'){
-    statusEl.textContent='Script failed'; statusEl.style.color='#f00';
-    logEl.textContent='Cannot load MediaPipe — check internet connection.'; return;
-  }
+async function start() {
+  // Poll for Hands to load (scripts are async)
+let attempts=0;
+  while (typeof Hands==='undefined'&&attempts<40) {
+  while (typeof Holistic==='undefined' && attempts<50) {
+await new Promise(r=>setTimeout(r,200));
+attempts++;
+}
+  if (typeof Hands==='undefined') {
+  if (typeof Holistic==='undefined') {
+statusEl.textContent='Script failed to load';
+statusEl.style.color='#f00';
+    logEl.textContent='Could not load MediaPipe from unpkg.com — check internet connection.';
+    logEl.textContent='Cannot load MediaPipe from unpkg.com — check internet.';
+return;
+}
 
   logEl.textContent='Scripts OK. Requesting camera...';
-  let stream;
-  try{ stream=await navigator.mediaDevices.getUserMedia({video:{width:W,height:H,facingMode:'user'}}); }
-  catch(e){
-    statusEl.textContent='Camera blocked'; statusEl.style.color='#f00';
-    logEl.textContent='Allow camera access then reload.'; return;
-  }
+  logEl.textContent='Scripts loaded. Requesting camera...';
 
-  video.srcObject=stream;
-  await new Promise(r=>video.onloadedmetadata=r);
+let stream;
+try {
+stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'}});
+} catch(e) {
+statusEl.textContent='Camera blocked: '+e.message;
+statusEl.style.color='#f00';
+    logEl.textContent='Allow camera, then reload. Safari: Develop → Disable Local File Restrictions';
+    logEl.textContent='Allow camera access then reload.';
+return;
+}
+
+video.srcObject=stream;
+await new Promise(r=>video.onloadedmetadata=r);
+  statusEl.textContent='Downloading AI model...';
+  logEl.textContent='First load downloads ~10MB model. Please wait...';
   statusEl.textContent='Downloading model (~20MB)...';
   statusEl.style.color='#ff0';
-  logEl.textContent='First load: downloading model, please wait a moment...';
+  logEl.textContent='First load downloads model files, please wait...';
 
-  const holistic=new Holistic({
-    locateFile:f=>`https://unpkg.com/@mediapipe/holistic@0.5.1675471629/${f}`
-  });
+  const hands=new Hands({
+    locateFile: f=>`https://unpkg.com/@mediapipe/hands@0.4.1646424915/${f}`
+  const holistic = new Holistic({
+    locateFile: f=>`https://unpkg.com/@mediapipe/holistic@0.5.1675471629/${f}`
+});
+  hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.6});
+  hands.onResults(onResults);
+
+  // Trigger model download with first frame
+  try { await hands.send({image:video}); } catch(e){}
   holistic.setOptions({
-    modelComplexity:1, smoothLandmarks:true,
-    enableSegmentation:false, refineFaceLandmarks:true,
-    minDetectionConfidence:0.6, minTrackingConfidence:0.6,
+    modelComplexity: 1,
+    smoothLandmarks: true,
+    enableSegmentation: false,
+    smoothSegmentation: false,
+    refineFaceLandmarks: true,
+    minDetectionConfidence: 0.6,
+    minTrackingConfidence: 0.6,
   });
-  holistic.onResults(onResults);
-  try{await holistic.send({image:video});}catch(e){}
 
-  if(typeof Camera!=='undefined'){
-    new Camera(video,{onFrame:async()=>{await holistic.send({image:video});},width:W,height:H}).start();
-  } else {
-    (async function loop(){
-      try{await holistic.send({image:video});}catch(e){}
-      requestAnimationFrame(loop);
-    })();
-  }
-  logEl.textContent='⚡ Bring your hands close together to charge lightning!';
+  holistic.onResults(onResults);
+
+  try { await holistic.send({image:video}); } catch(e){}
+
+  // Camera loop — fallback if Camera util not loaded
+if (typeof Camera!=='undefined') {
+new Camera(video,{
+      onFrame: async()=>{ await hands.send({image:video}); },
+      onFrame: async()=>{ await holistic.send({image:video}); },
+width:640, height:480
+}).start();
+} else {
+(async function loop(){
+      try { await hands.send({image:video}); } catch(e){}
+      try { await holistic.send({image:video}); } catch(e){}
+requestAnimationFrame(loop);
+})();
+}
+  logEl.textContent='Show your hands to the camera!';
+
+  logEl.textContent='Show your hands and face!';
 }
 
 start();
-</script>
-</body>
-</html>
+  
