@@ -25,7 +25,7 @@
 <div id="container">
   <video id="video" autoplay muted playsinline></video>
   <canvas id="canvas" width="640" height="480"></canvas>
-  <div id="status" style="color:#ff0">Loading...</div>
+  <div id="status" style="color:#ff0">Starting...</div>
   <div id="hand-info"></div>
 </div>
 <div id="controls">
@@ -35,11 +35,10 @@
   <button id="btn-all" onclick="setMode('all')">All</button>
   <button onclick="cycleColor()">⬤ Color</button>
 </div>
-<div id="log">Open in Chrome or run via localhost for camera access</div>
+<div id="log">Loading...</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1632090166/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@mediapipe/camera_utils@0.3.1632090166/camera_utils.js" crossorigin="anonymous"></script>
 
 <script>
 const video = document.getElementById('video');
@@ -53,226 +52,175 @@ let mode = 'skeleton';
 let colorIdx = 0;
 
 const palettes = [
-  { finger: ['#ff2d78','#ff6b35','#ffe600','#00ff9f','#00e5ff'], palm: '#ff2d78', web: '#ff006680', dot: '#fff' },
-  { finger: ['#00cfff','#00aaff','#0066ff','#aa00ff','#ff00cc'], palm: '#00cfff', web: '#00cfff40', dot: '#fff' },
-  { finger: ['#00ff9f','#aaff00','#ffff00','#ff9900','#ff3300'], palm: '#00ff9f', web: '#00ff9f40', dot: '#fff' },
-  { finger: ['#ff00ff','#cc00ff','#8800ff','#4400ff','#0000ff'], palm: '#ff00ff', web: '#ff00ff40', dot: '#fff' },
+  { finger: ['#ff2d78','#ff6b35','#ffe600','#00ff9f','#00e5ff'], palm: '#ff2d78' },
+  { finger: ['#00cfff','#00aaff','#0066ff','#aa00ff','#ff00cc'], palm: '#00cfff' },
+  { finger: ['#00ff9f','#aaff00','#ffff00','#ff9900','#ff3300'], palm: '#00ff9f' },
+  { finger: ['#ff00ff','#cc00ff','#8800ff','#ff4488','#ff0000'], palm: '#ff00ff' },
 ];
 
-// MediaPipe hand landmark indices
-// 0=wrist, 1-4=thumb, 5-8=index, 9-12=middle, 13-16=ring, 17-20=pinky
-const FINGERS = [
-  [0, 1, 2, 3, 4],       // thumb
-  [0, 5, 6, 7, 8],       // index
-  [0, 9, 10, 11, 12],    // middle
-  [0, 13, 14, 15, 16],   // ring
-  [0, 17, 18, 19, 20],   // pinky
-];
-
-// Palm connections
-const PALM = [0, 5, 9, 13, 17, 0];
-
-// Fingertip indices for cross-finger web lines
-const TIPS = [4, 8, 12, 16, 20];
-const KNUCKLES = [2, 5, 9, 13, 17];
-const MID_KNUCKLES = [3, 6, 10, 14, 18];
+const FINGERS    = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
+const FBASES     = [1,5,9,13,17];
+const PALM_RING  = [0,1,5,9,13,17,0];
+const TIPS       = [4,8,12,16,20];
+const KNUCK_A    = [5,9,13,17];
+const KNUCK_B    = [6,10,14,18];
 
 function setMode(m) {
   mode = m;
   document.querySelectorAll('button[id]').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('btn-' + m);
-  if (btn) btn.classList.add('active');
+  const b = document.getElementById('btn-'+m);
+  if (b) b.classList.add('active');
 }
+function cycleColor() { colorIdx = (colorIdx+1) % palettes.length; }
 
-function cycleColor() {
-  colorIdx = (colorIdx + 1) % palettes.length;
-}
+function P(lms, i) { return { x: lms[i].x*640, y: lms[i].y*480 }; }
 
-function px(lms, i, W, H) {
-  return { x: lms[i].x * W, y: lms[i].y * H };
-}
-
-function neonLine(x1, y1, x2, y2, color, w, blur) {
+function line(x1,y1,x2,y2,color,w,blur) {
   ctx.save();
-  ctx.shadowBlur = blur;
-  ctx.shadowColor = color;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = w;
-  ctx.globalAlpha = 0.92;
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
+  ctx.shadowBlur=blur; ctx.shadowColor=color;
+  ctx.strokeStyle=color; ctx.lineWidth=w; ctx.globalAlpha=0.92;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
   ctx.restore();
 }
 
-function neonDot(x, y, color, r, blur) {
+function dot(x,y,color,r,blur) {
   ctx.save();
-  ctx.shadowBlur = blur;
-  ctx.shadowColor = color;
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 1;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.shadowBlur=blur; ctx.shadowColor=color; ctx.fillStyle=color;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
   ctx.restore();
 }
 
-function drawHand(lms, handLabel) {
-  const W = 640, H = 480;
+function drawHand(lms, label) {
   const cs = palettes[colorIdx];
+  const wrist = P(lms,0);
 
-  // Draw palm base
-  if (mode === 'skeleton' || mode === 'all') {
-    for (let i = 0; i < PALM.length - 1; i++) {
-      const p1 = px(lms, PALM[i], W, H);
-      const p2 = px(lms, PALM[i + 1], W, H);
-      neonLine(p1.x, p1.y, p2.x, p2.y, cs.palm, 1.5, 12);
+  if (mode==='skeleton'||mode==='all') {
+    for (let i=0;i<PALM_RING.length-1;i++) {
+      const a=P(lms,PALM_RING[i]),b=P(lms,PALM_RING[i+1]);
+      line(a.x,a.y,b.x,b.y,cs.palm,1.5,12);
     }
-
-    // Draw each finger with per-finger color
-    FINGERS.forEach((finger, fi) => {
-      const color = cs.finger[fi];
-      for (let i = 0; i < finger.length - 1; i++) {
-        const p1 = px(lms, finger[i], W, H);
-        const p2 = px(lms, finger[i + 1], W, H);
-        // skip wrist-to-first for non-index fingers (already drawn in palm)
-        if (i === 0 && fi !== 1) {
-          // draw wrist to base knuckle
-          neonLine(p1.x, p1.y, p2.x, p2.y, color, 1, 8);
-        } else {
-          neonLine(p1.x, p1.y, p2.x, p2.y, color, 1.8, 14);
-        }
+    FINGERS.forEach((seg,fi) => {
+      const color=cs.finger[fi];
+      const base=P(lms,FBASES[fi]);
+      line(wrist.x,wrist.y,base.x,base.y,color,1,6);
+      for (let i=0;i<seg.length-1;i++) {
+        const a=P(lms,seg[i]),b=P(lms,seg[i+1]);
+        line(a.x,a.y,b.x,b.y,color,2,14);
       }
     });
   }
 
-  // Cross-finger web lines (between adjacent fingertips and knuckles)
-  if (mode === 'web' || mode === 'all') {
-    // Connect adjacent fingertips
-    for (let i = 0; i < TIPS.length - 1; i++) {
-      const p1 = px(lms, TIPS[i], W, H);
-      const p2 = px(lms, TIPS[i + 1], W, H);
-      neonLine(p1.x, p1.y, p2.x, p2.y, cs.web.replace('40','99'), 0.8, 8);
+  if (mode==='web'||mode==='all') {
+    for (let i=0;i<TIPS.length-1;i++) {
+      const a=P(lms,TIPS[i]),b=P(lms,TIPS[i+1]);
+      line(a.x,a.y,b.x,b.y,cs.finger[i]+'bb',1,8);
     }
-    // Connect adjacent knuckles
-    for (let i = 0; i < KNUCKLES.length - 1; i++) {
-      const p1 = px(lms, KNUCKLES[i], W, H);
-      const p2 = px(lms, KNUCKLES[i + 1], W, H);
-      neonLine(p1.x, p1.y, p2.x, p2.y, cs.palm + '66', 0.8, 6);
+    for (let i=0;i<KNUCK_A.length-1;i++) {
+      const a=P(lms,KNUCK_A[i]),b=P(lms,KNUCK_A[i+1]);
+      line(a.x,a.y,b.x,b.y,cs.palm+'88',0.8,6);
     }
-    // Connect adjacent mid knuckles
-    for (let i = 0; i < MID_KNUCKLES.length - 1; i++) {
-      const p1 = px(lms, MID_KNUCKLES[i], W, H);
-      const p2 = px(lms, MID_KNUCKLES[i + 1], W, H);
-      neonLine(p1.x, p1.y, p2.x, p2.y, cs.palm + '44', 0.7, 5);
+    for (let i=0;i<KNUCK_B.length-1;i++) {
+      const a=P(lms,KNUCK_B[i]),b=P(lms,KNUCK_B[i+1]);
+      line(a.x,a.y,b.x,b.y,cs.palm+'55',0.7,5);
     }
-    // Diagonal cross lines tip-to-knuckle (creates the mesh look)
-    for (let i = 0; i < TIPS.length - 1; i++) {
-      const tip1 = px(lms, TIPS[i], W, H);
-      const knuckle2 = px(lms, KNUCKLES[i + 1], W, H);
-      neonLine(tip1.x, tip1.y, knuckle2.x, knuckle2.y, cs.finger[i] + '55', 0.6, 4);
-
-      const tip2 = px(lms, TIPS[i + 1], W, H);
-      const knuckle1 = px(lms, KNUCKLES[i], W, H);
-      neonLine(tip2.x, tip2.y, knuckle1.x, knuckle1.y, cs.finger[i + 1] + '55', 0.6, 4);
+    for (let i=0;i<TIPS.length-1;i++) {
+      const t1=P(lms,TIPS[i]),k2=P(lms,KNUCK_A[Math.min(i+1,KNUCK_A.length-1)]);
+      const t2=P(lms,TIPS[i+1]),k1=P(lms,KNUCK_A[i]);
+      line(t1.x,t1.y,k2.x,k2.y,cs.finger[i]+'44',0.6,4);
+      line(t2.x,t2.y,k1.x,k1.y,cs.finger[i+1]+'44',0.6,4);
     }
   }
 
-  // Landmark dots
-  if (mode === 'dots' || mode === 'all' || mode === 'skeleton') {
-    for (let i = 0; i < 21; i++) {
-      const p = px(lms, i, W, H);
-      // fingertips are bigger
-      const isTip = TIPS.includes(i);
-      const fingerIdx = FINGERS.findIndex(f => f.includes(i));
-      const color = fingerIdx >= 0 ? cs.finger[fingerIdx] : cs.palm;
-      neonDot(p.x, p.y, color, isTip ? 4 : 2.5, isTip ? 16 : 8);
-      // white center dot on tips
-      if (isTip) neonDot(p.x, p.y, '#ffffff', 1.5, 0);
+  if (mode==='dots'||mode==='skeleton'||mode==='all') {
+    for (let i=0;i<21;i++) {
+      const p=P(lms,i);
+      const fi=FINGERS.findIndex(f=>f.includes(i));
+      const color=fi>=0?cs.finger[fi]:cs.palm;
+      const isTip=TIPS.includes(i);
+      dot(p.x,p.y,color,isTip?4.5:2.5,isTip?18:8);
+      if(isTip) dot(p.x,p.y,'#ffffff',1.5,0);
     }
   }
 
-  // Hand label
-  const wrist = px(lms, 0, W, H);
   ctx.save();
-  ctx.font = '11px monospace';
-  ctx.fillStyle = cs.palm;
-  ctx.globalAlpha = 0.7;
-  ctx.fillText(handLabel.toUpperCase(), wrist.x - 16, wrist.y + 20);
+  ctx.font='11px monospace'; ctx.fillStyle=cs.palm; ctx.globalAlpha=0.6;
+  ctx.fillText(label.toUpperCase(),wrist.x-12,wrist.y+22);
   ctx.restore();
 }
 
 function onResults(results) {
-  ctx.clearRect(0, 0, 640, 480);
-  ctx.drawImage(results.image, 0, 0, 640, 480);
-  ctx.fillStyle = 'rgba(0,0,0,0.52)';
-  ctx.fillRect(0, 0, 640, 480);
+  ctx.clearRect(0,0,640,480);
+  ctx.drawImage(results.image,0,0,640,480);
+  ctx.fillStyle='rgba(0,0,0,0.52)';
+  ctx.fillRect(0,0,640,480);
 
-  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-    statusEl.textContent = 'Show your hands';
-    statusEl.style.color = '#f90';
-    handInfoEl.textContent = '';
+  if (!results.multiHandLandmarks||results.multiHandLandmarks.length===0) {
+    statusEl.textContent='Show your hands';
+    statusEl.style.color='#f90';
+    handInfoEl.textContent='';
     return;
   }
-
-  statusEl.textContent = '● TRACKING';
-  statusEl.style.color = '#0f0';
-  handInfoEl.textContent = results.multiHandLandmarks.length + ' hand' + (results.multiHandLandmarks.length > 1 ? 's' : '') + ' detected';
-
-  results.multiHandLandmarks.forEach((lms, i) => {
-    const label = results.multiHandedness?.[i]?.label || 'Hand';
-    drawHand(lms, label);
+  statusEl.textContent='● TRACKING';
+  statusEl.style.color='#0f0';
+  handInfoEl.textContent=results.multiHandLandmarks.length+' hand'+(results.multiHandLandmarks.length>1?'s':'')+' detected';
+  results.multiHandLandmarks.forEach((lms,i)=>{
+    const label=results.multiHandedness?.[i]?.label||'Hand';
+    drawHand(lms,label);
   });
 }
 
 async function start() {
-  if (typeof Hands === 'undefined') {
-    statusEl.textContent = 'Script load failed';
-    statusEl.style.color = '#f00';
-    logEl.textContent = 'MediaPipe Hands could not load. Use Chrome + internet connection.';
+  // Poll for Hands to load (scripts are async)
+  let attempts=0;
+  while (typeof Hands==='undefined'&&attempts<40) {
+    await new Promise(r=>setTimeout(r,200));
+    attempts++;
+  }
+  if (typeof Hands==='undefined') {
+    statusEl.textContent='Script failed to load';
+    statusEl.style.color='#f00';
+    logEl.textContent='Could not load MediaPipe from unpkg.com — check internet connection.';
     return;
   }
 
-  statusEl.textContent = 'Requesting camera...';
-  statusEl.style.color = '#ff0';
-
+  logEl.textContent='Scripts OK. Requesting camera...';
   let stream;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
-  } catch (e) {
-    statusEl.textContent = 'Camera blocked: ' + e.message;
-    statusEl.style.color = '#f00';
-    logEl.textContent = 'Allow camera access then reload. In Safari: Develop → Disable Local File Restrictions.';
+    stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'}});
+  } catch(e) {
+    statusEl.textContent='Camera blocked: '+e.message;
+    statusEl.style.color='#f00';
+    logEl.textContent='Allow camera, then reload. Safari: Develop → Disable Local File Restrictions';
     return;
   }
 
-  video.srcObject = stream;
-  await new Promise(r => video.onloadedmetadata = r);
-  logEl.textContent = 'Camera active — show your hands!';
-  statusEl.textContent = 'Initializing model...';
+  video.srcObject=stream;
+  await new Promise(r=>video.onloadedmetadata=r);
+  statusEl.textContent='Downloading AI model...';
+  logEl.textContent='First load downloads ~10MB model. Please wait...';
 
-  const hands = new Hands({
-    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
+  const hands=new Hands({
+    locateFile: f=>`https://unpkg.com/@mediapipe/hands@0.4.1646424915/${f}`
   });
-
-  hands.setOptions({
-    maxNumHands: 2,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.6,
-  });
-
+  hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.6});
   hands.onResults(onResults);
 
-  const camera = new Camera(video, {
-    onFrame: async () => { await hands.send({ image: video }); },
-    width: 640,
-    height: 480,
-  });
+  // Trigger model download with first frame
+  try { await hands.send({image:video}); } catch(e){}
 
-  camera.start();
-  logEl.textContent = 'Running — show your hands to camera!';
+  // Camera loop — fallback if Camera util not loaded
+  if (typeof Camera!=='undefined') {
+    new Camera(video,{
+      onFrame: async()=>{ await hands.send({image:video}); },
+      width:640, height:480
+    }).start();
+  } else {
+    (async function loop(){
+      try { await hands.send({image:video}); } catch(e){}
+      requestAnimationFrame(loop);
+    })();
+  }
+  logEl.textContent='Show your hands to the camera!';
 }
 
 start();
