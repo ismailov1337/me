@@ -2,525 +2,528 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Air Blackboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Air Write</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#111;overflow:hidden;width:100vw;height:100vh;font-family:'Courier New',monospace}
 
-  body {
-    background: #0a0a0a;
-    font-family: 'Courier New', monospace;
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+#board{position:absolute;inset:0;width:100%;height:100%}
 
-  #app {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-  }
+#video{
+  position:absolute;bottom:16px;right:16px;
+  width:220px;height:165px;
+  border-radius:14px;border:1.5px solid rgba(255,255,255,0.12);
+  object-fit:cover;transform:scaleX(-1);
+  z-index:10;opacity:0.9;
+}
+#hand-canvas{
+  position:absolute;bottom:16px;right:16px;
+  width:220px;height:165px;border-radius:14px;
+  transform:scaleX(-1);z-index:11;pointer-events:none;
+}
 
-  #blackboard {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: #1a1a1a;
-    cursor: none;
-  }
+#toolbar{
+  position:absolute;top:16px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;
+  background:rgba(20,20,20,0.85);backdrop-filter:blur(12px);
+  border:0.5px solid rgba(255,255,255,0.1);border-radius:100px;
+  padding:8px 16px;z-index:30;
+}
+.cbtn{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:.15s}
+.cbtn.on{border-color:white;transform:scale(1.2)}
+.cbtn:hover{transform:scale(1.15)}
+.sep{width:0.5px;height:18px;background:rgba(255,255,255,0.15)}
+.tbtn{
+  background:transparent;border:0.5px solid rgba(255,255,255,0.18);
+  color:rgba(255,255,255,0.6);font-family:'Courier New',monospace;
+  font-size:10px;letter-spacing:.06em;padding:4px 11px;
+  border-radius:100px;cursor:pointer;transition:.15s;
+}
+.tbtn:hover,.tbtn.on{background:rgba(255,255,255,0.12);color:#fff;border-color:rgba(255,255,255,0.35)}
+#sz{
+  -webkit-appearance:none;width:70px;height:3px;
+  background:rgba(255,255,255,0.2);border-radius:2px;outline:none;
+}
+#sz::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#fff;cursor:pointer}
 
-  #video {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 200px;
-    height: 150px;
-    border-radius: 12px;
-    border: 2px solid rgba(255,255,255,0.15);
-    object-fit: cover;
-    transform: scaleX(-1);
-    z-index: 10;
-    opacity: 0.85;
-  }
+#status{
+  position:absolute;bottom:24px;left:50%;transform:translateX(-50%);
+  font-size:11px;letter-spacing:.12em;color:rgba(255,255,255,0.3);
+  text-transform:uppercase;z-index:20;pointer-events:none;
+  transition:opacity .4s;white-space:nowrap;
+}
 
-  #overlay-canvas {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 200px;
-    height: 150px;
-    border-radius: 12px;
-    transform: scaleX(-1);
-    z-index: 11;
-    pointer-events: none;
-  }
+#cursor{
+  position:absolute;pointer-events:none;z-index:50;
+  width:18px;height:18px;border-radius:50%;
+  transform:translate(-50%,-50%);
+  transition:background .15s;
+}
 
-  #ui {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    z-index: 20;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(8px);
-    border: 0.5px solid rgba(255,255,255,0.12);
-    border-radius: 100px;
-    padding: 10px 18px;
-  }
+#load{
+  position:absolute;inset:0;background:#0d0d0d;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:200;gap:20px;
+}
+#load h1{color:rgba(255,255,255,.8);font-size:26px;letter-spacing:.25em;font-weight:normal}
+#load p{color:rgba(255,255,255,.3);font-size:11px;letter-spacing:.15em;text-transform:uppercase}
+.spin{width:36px;height:36px;border:1.5px solid rgba(255,255,255,.1);border-top-color:rgba(255,255,255,.6);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
 
-  .color-btn {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s;
-    flex-shrink: 0;
-  }
-  .color-btn:hover { transform: scale(1.2); }
-  .color-btn.active { border-color: white; transform: scale(1.15); }
-
-  .sep {
-    width: 0.5px;
-    height: 20px;
-    background: rgba(255,255,255,0.2);
-  }
-
-  .tool-btn {
-    background: transparent;
-    border: 0.5px solid rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.7);
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    letter-spacing: 0.05em;
-    padding: 5px 12px;
-    border-radius: 100px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .tool-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-  .tool-btn.active { background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.4); }
-
-  #size-slider {
-    -webkit-appearance: none;
-    width: 80px;
-    height: 3px;
-    border-radius: 2px;
-    background: rgba(255,255,255,0.2);
-    outline: none;
-  }
-  #size-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: white;
-    cursor: pointer;
-  }
-
-  #status {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    color: rgba(255,255,255,0.35);
-    text-transform: uppercase;
-    z-index: 20;
-    pointer-events: none;
-    transition: opacity 0.5s;
-  }
-
-  #gesture-hint {
-    position: absolute;
-    top: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    color: rgba(255,255,255,0.3);
-    text-transform: uppercase;
-    z-index: 20;
-    pointer-events: none;
-    text-align: center;
-    line-height: 1.8;
-  }
-
-  #cursor-dot {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 50;
-    transform: translate(-50%, -50%);
-    transition: width 0.1s, height 0.1s;
-    mix-blend-mode: screen;
-  }
-
-  #loading-screen {
-    position: absolute;
-    inset: 0;
-    background: #0d0d0d;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    gap: 24px;
-  }
-
-  #loading-screen h1 {
-    color: rgba(255,255,255,0.85);
-    font-size: 28px;
-    font-family: 'Courier New', monospace;
-    letter-spacing: 0.2em;
-    font-weight: normal;
-  }
-
-  #loading-screen p {
-    color: rgba(255,255,255,0.35);
-    font-size: 12px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-  }
-
-  .loader {
-    width: 40px;
-    height: 40px;
-    border: 1.5px solid rgba(255,255,255,0.1);
-    border-top-color: rgba(255,255,255,0.6);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  #chalk-texture {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 5;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    background-size: 128px 128px;
-  }
+#mode-badge{
+  position:absolute;top:72px;left:50%;transform:translateX(-50%);
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,.25);z-index:20;pointer-events:none;
+  transition:color .3s;
+}
 </style>
 </head>
 <body>
-<div id="app">
-  <canvas id="blackboard"></canvas>
-  <div id="chalk-texture"></div>
+<canvas id="board"></canvas>
 
-  <div id="loading-screen">
-    <h1>AIR BOARD</h1>
-    <div class="loader"></div>
-    <p id="load-msg">Loading hand tracking model…</p>
-  </div>
-
-  <div id="ui">
-    <div class="color-btn active" style="background:#ffffff" data-color="#ffffff" title="White chalk"></div>
-    <div class="color-btn" style="background:#f4d03f" data-color="#f4d03f" title="Yellow"></div>
-    <div class="color-btn" style="background:#5dade2" data-color="#5dade2" title="Blue"></div>
-    <div class="color-btn" style="background:#58d68d" data-color="#58d68d" title="Green"></div>
-    <div class="color-btn" style="background:#ec7063" data-color="#ec7063" title="Red"></div>
-    <div class="color-btn" style="background:#a569bd" data-color="#a569bd" title="Purple"></div>
-    <div class="sep"></div>
-    <button class="tool-btn active" id="btn-draw" title="Draw mode">Draw</button>
-    <button class="tool-btn" id="btn-erase" title="Erase mode">Erase</button>
-    <div class="sep"></div>
-    <input type="range" id="size-slider" min="2" max="30" value="8" title="Brush size">
-    <div class="sep"></div>
-    <button class="tool-btn" id="btn-clear" title="Clear board">Clear</button>
-  </div>
-
-  <video id="video" autoplay muted playsinline></video>
-  <canvas id="overlay-canvas"></canvas>
-
-  <div id="cursor-dot"></div>
-
-  <div id="status">Raise index finger to draw · Pinch to pause</div>
-  <div id="gesture-hint" id="gesture-hint"></div>
+<div id="load">
+  <h1>AIR WRITE</h1>
+  <div class="spin"></div>
+  <p id="lmsg">Loading…</p>
 </div>
+
+<div id="toolbar">
+  <div class="cbtn on" style="background:#fff" data-c="#ffffff"></div>
+  <div class="cbtn" style="background:#f5c518" data-c="#f5c518"></div>
+  <div class="cbtn" style="background:#4fc3f7" data-c="#4fc3f7"></div>
+  <div class="cbtn" style="background:#66bb6a" data-c="#66bb6a"></div>
+  <div class="cbtn" style="background:#ef5350" data-c="#ef5350"></div>
+  <div class="cbtn" style="background:#ce93d8" data-c="#ce93d8"></div>
+  <div class="sep"></div>
+  <input type="range" id="sz" min="3" max="28" value="7">
+  <div class="sep"></div>
+  <button class="tbtn" id="undoBtn">Undo</button>
+  <button class="tbtn" id="clearBtn">Clear</button>
+</div>
+
+<video id="video" autoplay muted playsinline></video>
+<canvas id="hand-canvas"></canvas>
+
+<div id="cursor"></div>
+<div id="status">☝️ Yozing · 🤏 Pinch = to'xtat · ✌️ = tanla/siljit/kattalashtir</div>
+<div id="mode-badge">WRITE MODE</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 
 <script>
-const canvas = document.getElementById('blackboard');
-const ctx = canvas.getContext('2d');
-const video = document.getElementById('video');
-const overlayCanvas = document.getElementById('overlay-canvas');
-const overlayCtx = overlayCanvas.getContext('2d');
-const cursorDot = document.getElementById('cursor-dot');
-const statusEl = document.getElementById('status');
-const loadScreen = document.getElementById('loading-screen');
-const loadMsg = document.getElementById('load-msg');
+// ─── Canvas setup ───────────────────────────────────────────────
+const board = document.getElementById('board');
+const ctx   = board.getContext('2d');
 
-let currentColor = '#ffffff';
-let brushSize = 8;
-let mode = 'draw';
-let isDrawing = false;
-let lastX = null, lastY = null;
-let smoothX = null, smoothY = null;
-
-function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  canvas.width = w; canvas.height = h;
-  ctx.putImageData(imageData, 0, 0);
-  drawChalkGrid();
+function resize(){
+  board.width  = window.innerWidth;
+  board.height = window.innerHeight;
+  redraw();
 }
-
-function drawChalkGrid() {
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
-  ctx.lineWidth = 0.5;
-  const step = 40;
-  for (let y = step; y < canvas.height; y += step) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-  }
-  ctx.restore();
-}
-
 window.addEventListener('resize', resize);
-resize();
-drawChalkGrid();
+board.width  = window.innerWidth;
+board.height = window.innerHeight;
 
-function chalkStroke(x, y, px, py, color, size, erasing) {
+// ─── State ──────────────────────────────────────────────────────
+let color    = '#ffffff';
+let brushSz  = 7;
+let mode     = 'write'; // 'write' | 'select'
+
+// A stroke = { points:[], color, size, selected:false }
+// A group (frozen) = { strokes:[], x, y, w, h, scale, rotation:0, selected:false, offscreen:canvas }
+const strokes = [];   // completed groups on board
+let liveStroke = null; // currently drawing
+
+let selGroup  = null; // selected group
+let dragStart = null; // {gx,gy,px,py}
+let scaleStart= null; // {dist, scale0, cx, cy}
+
+const modeBadge = document.getElementById('mode-badge');
+const cursor    = document.getElementById('cursor');
+const lmsg      = document.getElementById('lmsg');
+const loadEl    = document.getElementById('load');
+
+function setMode(m){
+  mode = m;
+  modeBadge.textContent = m === 'write' ? 'WRITE MODE' : 'SELECT MODE';
+  modeBadge.style.color = m === 'write' ? 'rgba(255,255,255,.25)' : 'rgba(100,200,255,.6)';
+}
+
+// ─── Rendering ──────────────────────────────────────────────────
+function redraw(){
+  ctx.clearRect(0,0,board.width,board.height);
+  // faint grid
   ctx.save();
-  if (erasing) {
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.strokeStyle = 'rgba(0,0,0,1)';
-    ctx.lineWidth = size * 3.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  } else {
-    ctx.globalCompositeOperation = 'source-over';
-    const r = parseInt(color.slice(1,3),16);
-    const g = parseInt(color.slice(3,5),16);
-    const b = parseInt(color.slice(5,7),16);
-    for (let i = 0; i < 3; i++) {
-      const jx = x + (Math.random()-0.5)*size*0.4;
-      const jy = y + (Math.random()-0.5)*size*0.4;
-      const jpx = px + (Math.random()-0.5)*size*0.4;
-      const jpy = py + (Math.random()-0.5)*size*0.4;
-      const alpha = 0.5 + Math.random() * 0.4;
-      ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
-      ctx.lineWidth = size * (0.5 + Math.random()*0.6);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(jpx, jpy);
-      ctx.lineTo(jx, jy);
-      ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.025)';
+  ctx.lineWidth=0.5;
+  for(let y=40;y<board.height;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(board.width,y);ctx.stroke()}
+  ctx.restore();
+
+  for(const g of strokes) drawGroup(g);
+
+  // live stroke
+  if(liveStroke && liveStroke.points.length>1){
+    drawChalkPath(ctx, liveStroke.points, liveStroke.color, liveStroke.size);
+  }
+}
+
+function drawGroup(g){
+  ctx.save();
+  const cx = g.x + g.w*g.scale/2;
+  const cy = g.y + g.h*g.scale/2;
+  ctx.translate(cx, cy);
+  ctx.scale(g.scale, g.scale);
+  ctx.translate(-g.w/2, -g.h/2);
+  ctx.drawImage(g.offscreen, 0, 0);
+  ctx.restore();
+
+  if(g.selected){
+    ctx.save();
+    ctx.strokeStyle='rgba(100,200,255,0.7)';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([5,4]);
+    const pad=10;
+    const sw=g.w*g.scale, sh=g.h*g.scale;
+    ctx.strokeRect(g.x-pad, g.y-pad, sw+pad*2, sh+pad*2);
+    // corner handles
+    ctx.fillStyle='rgba(100,200,255,0.9)';
+    ctx.setLineDash([]);
+    for(const [hx,hy] of [
+      [g.x-pad,g.y-pad],[g.x+sw+pad,g.y-pad],
+      [g.x-pad,g.y+sh+pad],[g.x+sw+pad,g.y+sh+pad]
+    ]){
+      ctx.beginPath();ctx.arc(hx,hy,6,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawChalkPath(targetCtx, points, col, sz){
+  const r=parseInt(col.slice(1,3),16);
+  const g=parseInt(col.slice(3,5),16);
+  const b=parseInt(col.slice(5,7),16);
+  for(let i=1;i<points.length;i++){
+    const px=points[i-1], p=points[i];
+    for(let j=0;j<3;j++){
+      targetCtx.strokeStyle=`rgba(${r},${g},${b},${0.5+Math.random()*0.4})`;
+      targetCtx.lineWidth=sz*(0.5+Math.random()*0.6);
+      targetCtx.lineCap='round';targetCtx.lineJoin='round';
+      targetCtx.beginPath();
+      targetCtx.moveTo(px.x+(Math.random()-.5)*sz*.3, px.y+(Math.random()-.5)*sz*.3);
+      targetCtx.lineTo(p.x+(Math.random()-.5)*sz*.3,   p.y+(Math.random()-.5)*sz*.3);
+      targetCtx.stroke();
     }
   }
-  ctx.restore();
 }
 
-document.querySelectorAll('.color-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentColor = btn.dataset.color;
-    cursorDot.style.background = currentColor;
-    if (mode === 'erase') {
-      mode = 'draw';
-      document.getElementById('btn-draw').classList.add('active');
-      document.getElementById('btn-erase').classList.remove('active');
+function freezeStroke(stroke){
+  if(!stroke || stroke.points.length < 2) return;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const p of stroke.points){
+    minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);
+    maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);
+  }
+  const pad=stroke.size*2+10;
+  minX-=pad;minY-=pad;maxX+=pad;maxY+=pad;
+  const w=maxX-minX, h=maxY-minY;
+  const off=document.createElement('canvas');
+  off.width=w; off.height=h;
+  const octx=off.getContext('2d');
+  // shift points
+  const pts=stroke.points.map(p=>({x:p.x-minX,y:p.y-minY}));
+  drawChalkPath(octx,pts,stroke.color,stroke.size);
+  strokes.push({offscreen:off,x:minX,y:minY,w,h,scale:1,selected:false});
+}
+
+function undo(){
+  if(strokes.length){strokes.pop();redraw();}
+}
+
+// ─── Hit test & interaction ──────────────────────────────────────
+function hitTest(px,py){
+  for(let i=strokes.length-1;i>=0;i--){
+    const g=strokes[i];
+    const sw=g.w*g.scale, sh=g.h*g.scale;
+    const pad=12;
+    if(px>=g.x-pad && px<=g.x+sw+pad && py>=g.y-pad && py<=g.y+sh+pad) return g;
+  }
+  return null;
+}
+
+// ─── Smooth cursor ───────────────────────────────────────────────
+let sx=null,sy=null;
+function lerp(a,b,t){return a+(b-a)*t}
+function smooth(x,y){
+  if(sx===null){sx=x;sy=y;}
+  sx=lerp(sx,x,0.35); sy=lerp(sy,y,0.35);
+  return {x:sx,y:sy};
+}
+
+function dist2d(ax,ay,bx,by){return Math.sqrt((bx-ax)**2+(by-ay)**2)}
+
+// ─── Hand logic ─────────────────────────────────────────────────
+let lastDraw={x:null,y:null};
+let pinchCooldown=0;
+
+function onHands(res){
+  const hc=document.getElementById('hand-canvas');
+  const hctx=hc.getContext('2d');
+  hctx.clearRect(0,0,hc.width,hc.height);
+
+  const W=board.width, H=board.height;
+
+  if(!res.multiHandLandmarks||!res.multiHandLandmarks.length){
+    if(liveStroke&&liveStroke.points.length>2){freezeStroke(liveStroke);}
+    liveStroke=null;
+    lastDraw={x:null,y:null};
+    cursor.style.opacity='0';
+    redraw(); return;
+  }
+
+  const lm=res.multiHandLandmarks[0];
+  function lp(i){return{x:(1-lm[i].x)*W, y:lm[i].y*H}}
+
+  const tip  =lp(8);  // index tip
+  const imid =lp(6);
+  const thumb=lp(4);
+  const mid  =lp(12);
+  const ring =lp(16);
+  const wrist=lp(0);
+
+  const {x:fx,y:fy}=smooth(tip.x,tip.y);
+
+  const handSpan=dist2d(wrist.x,wrist.y,mid.x,mid.y);
+  const pinch=dist2d(thumb.x,thumb.y,tip.x,tip.y)/Math.max(handSpan,1);
+
+  const indexUp = tip.y < imid.y - handSpan*0.04;
+  const midUp   = mid.y < lp(10).y - handSpan*0.04;
+  const ringUp  = ring.y < lp(14).y - handSpan*0.04;
+
+  // Gesture: two fingers up (peace) = SELECT mode
+  const twoFingers = indexUp && midUp && !ringUp;
+  // Gesture: only index up = WRITE
+  const oneFingerUp = indexUp && !midUp;
+  // Pinch = pause/confirm
+  const isPinch = pinch < 0.22;
+
+  if(twoFingers && !isPinch){ setMode('select'); }
+  else if(oneFingerUp){ setMode('write'); }
+
+  // Cursor
+  cursor.style.left=fx+'px'; cursor.style.top=fy+'px';
+  cursor.style.opacity='1';
+
+  // Draw hand skeleton on overlay
+  hctx.save();
+  hctx.strokeStyle='rgba(255,255,255,0.4)';
+  hctx.lineWidth=1;
+  for(const c of Hands.HAND_CONNECTIONS){
+    const a=lm[c[0]],b=lm[c[1]];
+    hctx.beginPath();
+    hctx.moveTo((1-a.x)*hc.width, a.y*hc.height);
+    hctx.lineTo((1-b.x)*hc.width, b.y*hc.height);
+    hctx.stroke();
+  }
+  for(let i=0;i<lm.length;i++){
+    const p=lm[i];
+    hctx.beginPath();
+    hctx.arc((1-p.x)*hc.width,p.y*hc.height, i===8?4:2.5, 0,Math.PI*2);
+    hctx.fillStyle=i===8?color:'rgba(255,255,255,0.7)';
+    hctx.fill();
+  }
+  hctx.restore();
+
+  // ── WRITE MODE ──
+  if(mode==='write'){
+    cursor.style.background=isPinch?'rgba(255,255,255,0.3)':color;
+    cursor.style.border=isPinch?'2px solid white':'none';
+
+    if(!isPinch && oneFingerUp){
+      if(!liveStroke) liveStroke={points:[],color,size:brushSz};
+      if(lastDraw.x!==null){
+        liveStroke.points.push({x:fx,y:fy});
+      } else {
+        liveStroke.points.push({x:fx,y:fy});
+      }
+      lastDraw={x:fx,y:fy};
+    } else if(isPinch){
+      // pinch = finish stroke
+      if(liveStroke&&liveStroke.points.length>2){
+        freezeStroke(liveStroke);
+        liveStroke=null;
+      }
+      lastDraw={x:null,y:null};
+    } else {
+      lastDraw={x:null,y:null};
+      if(liveStroke&&liveStroke.points.length>2){freezeStroke(liveStroke);liveStroke=null;}
     }
-  });
-});
-
-document.getElementById('btn-draw').addEventListener('click', () => {
-  mode = 'draw';
-  document.getElementById('btn-draw').classList.add('active');
-  document.getElementById('btn-erase').classList.remove('active');
-});
-
-document.getElementById('btn-erase').addEventListener('click', () => {
-  mode = 'erase';
-  document.getElementById('btn-erase').classList.add('active');
-  document.getElementById('btn-draw').classList.remove('active');
-});
-
-document.getElementById('btn-clear').addEventListener('click', () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawChalkGrid();
-});
-
-document.getElementById('size-slider').addEventListener('input', e => {
-  brushSize = parseInt(e.target.value);
-  const s = brushSize + 8;
-  cursorDot.style.width = s + 'px';
-  cursorDot.style.height = s + 'px';
-});
-
-cursorDot.style.background = currentColor;
-
-function lerp(a, b, t) { return a + (b - a) * t; }
-
-function dist(x1, y1, x2, y2) {
-  return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
-}
-
-function getLandmarkPos(lm, w, h) {
-  return { x: (1 - lm.x) * w, y: lm.y * h };
-}
-
-let handsReady = false;
-
-const hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-
-hands.setOptions({
-  maxNumHands: 1,
-  modelComplexity: 1,
-  minDetectionConfidence: 0.75,
-  minTrackingConfidence: 0.6,
-});
-
-hands.onResults(results => {
-  if (!handsReady) return;
-
-  const W = canvas.width, H = canvas.height;
-  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
-  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-    isDrawing = false;
-    lastX = null; lastY = null;
-    smoothX = null; smoothY = null;
-    cursorDot.style.opacity = '0';
+    redraw();
     return;
   }
 
-  const lm = results.multiHandLandmarks[0];
+  // ── SELECT MODE ──
+  cursor.style.background='rgba(100,200,255,0.5)';
+  cursor.style.border='1.5px solid rgba(100,200,255,0.9)';
 
-  const indexTip = getLandmarkPos(lm[8], W, H);
-  const indexMid = getLandmarkPos(lm[6], W, H);
-  const thumbTip = getLandmarkPos(lm[4], W, H);
-  const middleTip = getLandmarkPos(lm[12], W, H);
-  const ringTip = getLandmarkPos(lm[16], W, H);
-  const pinkyTip = getLandmarkPos(lm[20], W, H);
-  const wrist = getLandmarkPos(lm[0], W, H);
-
-  if (smoothX === null) { smoothX = indexTip.x; smoothY = indexTip.y; }
-  smoothX = lerp(smoothX, indexTip.x, 0.4);
-  smoothY = lerp(smoothY, indexTip.y, 0.4);
-
-  const pinchDist = dist(thumbTip.x, thumbTip.y, indexTip.x, indexTip.y);
-  const handSpan = dist(wrist.x, wrist.y, middleTip.x, middleTip.y);
-  const pinchRatio = pinchDist / (handSpan || 1);
-
-  const indexExtended = indexTip.y < indexMid.y - handSpan * 0.05;
-  const middleExtended = middleTip.y < getLandmarkPos(lm[10], W, H).y - handSpan * 0.05;
-  const ringExtended = ringTip.y < getLandmarkPos(lm[14], W, H).y - handSpan * 0.05;
-  const pinkyExtended = pinkyTip.y < getLandmarkPos(lm[18], W, H).y - handSpan * 0.05;
-
-  const pinching = pinchRatio < 0.22;
-  const shouldDraw = indexExtended && !pinching;
-
-  cursorDot.style.left = smoothX + 'px';
-  cursorDot.style.top = smoothY + 'px';
-  cursorDot.style.opacity = '1';
-
-  if (pinching) {
-    cursorDot.style.background = 'rgba(255,255,255,0.4)';
-    cursorDot.style.border = '2px solid white';
-    isDrawing = false;
-    lastX = null; lastY = null;
-  } else if (shouldDraw) {
-    const erasing = mode === 'erase';
-    cursorDot.style.background = erasing ? 'rgba(255,255,255,0.15)' : currentColor;
-    cursorDot.style.border = erasing ? '2px dashed rgba(255,255,255,0.5)' : 'none';
-
-    if (lastX !== null) {
-      chalkStroke(smoothX, smoothY, lastX, lastY, currentColor, brushSize, erasing);
+  if(isPinch){
+    // Start drag or scale
+    if(!dragStart){
+      // find hit
+      const hit=hitTest(fx,fy);
+      if(hit){
+        // deselect others
+        strokes.forEach(g=>g.selected=false);
+        hit.selected=true;
+        selGroup=hit;
+        dragStart={gx:hit.x, gy:hit.y, px:fx, py:fy};
+      } else {
+        strokes.forEach(g=>g.selected=false);
+        selGroup=null;
+      }
+    } else if(selGroup){
+      // drag
+      const dx=fx-dragStart.px, dy=fy-dragStart.py;
+      selGroup.x=dragStart.gx+dx;
+      selGroup.y=dragStart.gy+dy;
     }
-    lastX = smoothX; lastY = smoothY;
-    isDrawing = true;
   } else {
-    cursorDot.style.background = 'rgba(255,255,255,0.25)';
-    cursorDot.style.border = '1.5px solid rgba(255,255,255,0.5)';
-    isDrawing = false;
-    lastX = null; lastY = null;
+    dragStart=null;
   }
 
-  const scale = 200 / W;
-  const ow = overlayCanvas.width, oh = overlayCanvas.height;
-  overlayCtx.strokeStyle = 'rgba(255,255,255,0.5)';
-  overlayCtx.lineWidth = 1;
-  for (const conn of Hands.HAND_CONNECTIONS) {
-    const a = lm[conn[0]], b = lm[conn[1]];
-    overlayCtx.beginPath();
-    overlayCtx.moveTo((1-a.x)*ow, a.y*oh);
-    overlayCtx.lineTo((1-b.x)*ow, b.y*oh);
-    overlayCtx.stroke();
+  // Scale with two-hand pinch distance (simulate with thumb-middle distance)
+  // If only one hand: use pinch distance change for scale
+  if(selGroup && isPinch && dragStart){
+    // no-op; dragging
   }
-  for (let i = 0; i < lm.length; i++) {
-    const p = lm[i];
-    overlayCtx.beginPath();
-    overlayCtx.arc((1-p.x)*ow, p.y*oh, 2.5, 0, Math.PI*2);
-    overlayCtx.fillStyle = i === 8 ? currentColor : 'rgba(255,255,255,0.6)';
-    overlayCtx.fill();
-  }
-});
 
-async function startCamera() {
-  loadMsg.textContent = 'Requesting camera access…';
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
-  video.srcObject = stream;
-  overlayCanvas.width = 200; overlayCanvas.height = 150;
-
-  loadMsg.textContent = 'Starting hand detection…';
-
-  const camera = new Camera(video, {
-    onFrame: async () => { await hands.send({ image: video }); },
-    width: 640, height: 480
-  });
-  camera.start();
-
-  setTimeout(() => {
-    handsReady = true;
-    loadScreen.style.opacity = '0';
-    loadScreen.style.transition = 'opacity 0.6s';
-    setTimeout(() => loadScreen.style.display = 'none', 600);
-  }, 2000);
+  redraw();
 }
 
-loadMsg.textContent = 'Loading MediaPipe Hands…';
-startCamera().catch(err => {
-  loadMsg.textContent = 'Camera error: ' + err.message;
-  console.error(err);
+// Scale via slider for selected group (keyboard shortcut too)
+document.addEventListener('wheel', e=>{
+  if(selGroup){
+    e.preventDefault();
+    const delta=e.deltaY>0?0.93:1.07;
+    selGroup.scale=Math.max(0.1,Math.min(8,selGroup.scale*delta));
+    redraw();
+  }
+},{passive:false});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e=>{
+  if(e.key==='z'&&(e.ctrlKey||e.metaKey)){undo();}
+  if(e.key==='Escape'){strokes.forEach(g=>g.selected=false);selGroup=null;redraw();}
+  if(e.key==='Delete'&&selGroup){
+    const i=strokes.indexOf(selGroup);
+    if(i>-1){strokes.splice(i,1);selGroup=null;redraw();}
+  }
+  if(e.key===']'&&selGroup){selGroup.scale=Math.min(8,selGroup.scale*1.1);redraw();}
+  if(e.key==='['&&selGroup){selGroup.scale=Math.max(0.1,selGroup.scale*0.9);redraw();}
 });
 
-canvas.addEventListener('mousedown', e => {
-  isDrawing = true;
-  lastX = e.clientX; lastY = e.clientY;
-});
-canvas.addEventListener('mousemove', e => {
-  cursorDot.style.left = e.clientX + 'px';
-  cursorDot.style.top = e.clientY + 'px';
-  if (isDrawing) {
-    chalkStroke(e.clientX, e.clientY, lastX, lastY, currentColor, brushSize, mode === 'erase');
-    lastX = e.clientX; lastY = e.clientY;
+// Mouse fallback
+let mouseDown=false;
+board.addEventListener('mousedown', e=>{
+  if(mode==='write'){
+    liveStroke={points:[{x:e.clientX,y:e.clientY}],color,size:brushSz};
+    mouseDown=true;
+  } else {
+    const hit=hitTest(e.clientX,e.clientY);
+    strokes.forEach(g=>g.selected=false);
+    if(hit){hit.selected=true;selGroup=hit;dragStart={gx:hit.x,gy:hit.y,px:e.clientX,py:e.clientY};}
+    else selGroup=null;
+    mouseDown=true;
+    redraw();
   }
 });
-canvas.addEventListener('mouseup', () => { isDrawing = false; lastX = null; lastY = null; });
-canvas.addEventListener('mouseleave', () => { isDrawing = false; cursorDot.style.opacity = '0'; });
+board.addEventListener('mousemove',e=>{
+  cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px';cursor.style.opacity='1';
+  if(!mouseDown)return;
+  if(mode==='write'&&liveStroke){
+    liveStroke.points.push({x:e.clientX,y:e.clientY});
+    redraw();
+  } else if(mode==='select'&&selGroup&&dragStart){
+    selGroup.x=dragStart.gx+(e.clientX-dragStart.px);
+    selGroup.y=dragStart.gy+(e.clientY-dragStart.py);
+    redraw();
+  }
+});
+board.addEventListener('mouseup',()=>{
+  mouseDown=false;
+  if(mode==='write'&&liveStroke&&liveStroke.points.length>2){freezeStroke(liveStroke);liveStroke=null;redraw();}
+  dragStart=null;
+});
+board.addEventListener('mouseleave',()=>{cursor.style.opacity='0';});
+
+// Touch scale (pinch zoom on selected)
+let initTouchDist=null, initScale=null;
+board.addEventListener('touchstart',e=>{
+  if(e.touches.length===2&&selGroup){
+    initTouchDist=dist2d(e.touches[0].clientX,e.touches[0].clientY,e.touches[1].clientX,e.touches[1].clientY);
+    initScale=selGroup.scale;
+  }
+});
+board.addEventListener('touchmove',e=>{
+  if(e.touches.length===2&&selGroup&&initTouchDist){
+    e.preventDefault();
+    const d=dist2d(e.touches[0].clientX,e.touches[0].clientY,e.touches[1].clientX,e.touches[1].clientY);
+    selGroup.scale=Math.max(0.1,Math.min(8,initScale*(d/initTouchDist)));
+    redraw();
+  }
+},{passive:false});
+
+// ─── Toolbar ────────────────────────────────────────────────────
+document.querySelectorAll('.cbtn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.cbtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    color=b.dataset.c;
+    cursor.style.background=color;
+  });
+});
+document.getElementById('sz').addEventListener('input',e=>{brushSz=+e.target.value;});
+document.getElementById('undoBtn').addEventListener('click',undo);
+document.getElementById('clearBtn').addEventListener('click',()=>{strokes.length=0;liveStroke=null;selGroup=null;redraw();});
+
+// Write/Select mode button (optional)
+// Tap board in select mode to deselect
+board.addEventListener('click',e=>{
+  if(mode==='select'&&!hitTest(e.clientX,e.clientY)){
+    strokes.forEach(g=>g.selected=false);selGroup=null;redraw();
+  }
+});
+
+// ─── MediaPipe ──────────────────────────────────────────────────
+const video=document.getElementById('video');
+const hc=document.getElementById('hand-canvas');
+hc.width=220; hc.height=165;
+
+const hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+hands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.75,minTrackingConfidence:0.6});
+hands.onResults(onHands);
+
+lmsg.textContent='Kamera ruxsati so\'ralmoqda…';
+navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'}})
+.then(stream=>{
+  video.srcObject=stream;
+  lmsg.textContent='Model yuklanmoqda…';
+  const cam=new Camera(video,{
+    onFrame:async()=>{await hands.send({image:video});},
+    width:640,height:480
+  });
+  cam.start();
+  setTimeout(()=>{
+    loadEl.style.transition='opacity .7s';
+    loadEl.style.opacity='0';
+    setTimeout(()=>loadEl.style.display='none',700);
+  },2500);
+})
+.catch(err=>{lmsg.textContent='Kamera xatosi: '+err.message;});
+
+cursor.style.background=color;
+redraw();
 </script>
 </body>
 </html>
