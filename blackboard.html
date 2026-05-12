@@ -1,219 +1,468 @@
-
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #000; }
-#root { position: relative; width: 100%; height: 520px; overflow: hidden; background: #0a0a0a; border-radius: 12px; font-family: 'Courier New', monospace; }
-#videoEl { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; transform: scaleX(-1); }
-#drawCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-#ui { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 10; }
-.color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); cursor: pointer; transition: transform 0.15s, border-color 0.15s; }
-.color-btn.active { border-color: #fff; transform: scale(1.3); }
-.tool-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 11px; padding: 6px 8px; border-radius: 6px; cursor: pointer; text-align: center; transition: background 0.15s; white-space: nowrap; }
-.tool-btn:hover { background: rgba(255,255,255,0.2); }
-.tool-btn.active { background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.6); }
-#status { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.5); font-size: 11px; background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: 20px; z-index: 10; pointer-events: none; }
-#mode-label { position: absolute; top: 12px; left: 12px; color: rgba(255,255,255,0.7); font-size: 11px; background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: 20px; z-index: 10; }
-#cursor { position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; transform: translate(-50%,-50%); pointer-events: none; z-index: 20; transition: background 0.1s; display: none; }
-</style>
-
-<div id="root">
-  <video id="videoEl" autoplay playsinline muted></video>
-  <canvas id="drawCanvas"></canvas>
-  <div id="cursor"></div>
-  <div id="mode-label">✍️ DRAW MODE</div>
-  <div id="ui">
-    <div class="color-btn active" data-color="#00ffcc" style="background:#00ffcc"></div>
-    <div class="color-btn" data-color="#ff3cac" style="background:#ff3cac"></div>
-    <div class="color-btn" data-color="#ffd700" style="background:#ffd700"></div>
-    <div class="color-btn" data-color="#4fc3f7" style="background:#4fc3f7"></div>
-    <div class="color-btn" data-color="#ff6b35" style="background:#ff6b35"></div>
-    <div class="color-btn" data-color="#ffffff" style="background:#fff"></div>
-    <hr style="border-color:rgba(255,255,255,0.2); margin: 2px 0;">
-    <button class="tool-btn" id="btn-clear">CLEAR</button>
-    <button class="tool-btn" id="btn-flip-h">FLIP H</button>
-    <button class="tool-btn" id="btn-flip-v">FLIP V</button>
-    <button class="tool-btn" id="btn-rotate">ROT 90°</button>
-    <button class="tool-btn" id="btn-size-up">SIZE +</button>
-    <button class="tool-btn" id="btn-size-dn">SIZE -</button>
-  </div>
-  <div id="status">Starting camera…</div>
-</div>
-
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Air Write</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js"></script>
-<script>
-const video = document.getElementById('videoEl');
-const canvas = document.getElementById('drawCanvas');
-const ctx = canvas.getContext('2d');
-const cursor = document.getElementById('cursor');
-const statusEl = document.getElementById('status');
-const modeLabel = document.getElementById('mode-label');
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body,#root{width:100%;height:100%;background:#0b0b0f;overflow:hidden}
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap');
+  body{font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<div id="root"></div>
 
-let W, H;
-function resize() {
-  const root = document.getElementById('root');
-  W = canvas.width = root.offsetWidth;
-  H = canvas.height = root.offsetHeight;
-}
-resize();
-window.addEventListener('resize', resize);
+<script type="text/babel">
+const { useEffect, useRef, useState, useCallback } = React;
 
-let currentColor = '#00ffcc';
-let brushSize = 4;
-let strokes = [];
-let currentStroke = null;
-let isDrawing = false;
-let lastPinch = false;
-let rotation = 0;
-let flipH = false, flipV = false;
+// ─── Constants ───────────────────────────────────────────────────
+const COLORS = [
+  { hex:'#00ffcc', label:'Cyan' },
+  { hex:'#ff3cac', label:'Pink' },
+  { hex:'#ffd700', label:'Gold' },
+  { hex:'#4fc3f7', label:'Blue' },
+  { hex:'#ff6b35', label:'Orange' },
+  { hex:'#ffffff', label:'White' },
+];
 
-document.querySelectorAll('.color-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentColor = btn.dataset.color;
-  });
-});
+const SMOOTHING = 0.38; // lower = smoother but laggier
+const PINCH_THRESHOLD = 0.18; // ratio relative to hand size
 
-document.getElementById('btn-clear').addEventListener('click', () => { strokes = []; currentStroke = null; redraw(); });
-document.getElementById('btn-flip-h').addEventListener('click', () => { flipH = !flipH; redraw(); });
-document.getElementById('btn-flip-v').addEventListener('click', () => { flipV = !flipV; redraw(); });
-document.getElementById('btn-rotate').addEventListener('click', () => { rotation = (rotation + 90) % 360; redraw(); });
-document.getElementById('btn-size-up').addEventListener('click', () => { brushSize = Math.min(brushSize + 2, 20); });
-document.getElementById('btn-size-dn').addEventListener('click', () => { brushSize = Math.max(brushSize - 2, 1); });
+// ─── Lerp smoothing ──────────────────────────────────────────────
+function lerp(a, b, t) { return a + (b - a) * t; }
 
-function getLandmarkPos(lm) {
-  const x = (1 - lm.x) * W;
-  const y = lm.y * H;
-  return { x, y };
-}
-
-function fingerExtended(lms, tip, pip) {
-  return lms[tip].y < lms[pip].y;
-}
-
-function isPinching(lms) {
-  const thumb = getLandmarkPos(lms[4]);
-  const index = getLandmarkPos(lms[8]);
-  const dx = thumb.x - index.x, dy = thumb.y - index.y;
-  return Math.sqrt(dx*dx + dy*dy) < 35;
-}
-
-function countExtended(lms) {
-  let c = 0;
-  [[8,6],[12,10],[16,14],[20,18]].forEach(([t,p]) => { if (fingerExtended(lms,t,p)) c++; });
-  return c;
-}
-
-function drawGlow(sctx, pts, color, size) {
+// ─── Draw neon stroke on canvas ─────────────────────────────────
+function drawNeonPath(ctx, pts, color, size) {
   if (pts.length < 2) return;
-  sctx.save();
-  sctx.lineCap = 'round';
-  sctx.lineJoin = 'round';
-  sctx.shadowColor = color;
-  sctx.shadowBlur = size * 4;
-  sctx.strokeStyle = color;
-  sctx.lineWidth = size;
-  sctx.globalAlpha = 0.9;
-  sctx.beginPath();
-  sctx.moveTo(pts[0].x, pts[0].y);
-  for (let i = 1; i < pts.length; i++) sctx.lineTo(pts[i].x, pts[i].y);
-  sctx.stroke();
-  sctx.shadowBlur = size * 8;
-  sctx.lineWidth = size * 0.4;
-  sctx.globalAlpha = 0.4;
-  sctx.stroke();
-  sctx.restore();
-}
-
-function redraw() {
-  ctx.clearRect(0, 0, W, H);
-  if (strokes.length === 0) return;
-  
   ctx.save();
-  ctx.translate(W/2, H/2);
-  if (rotation) ctx.rotate(rotation * Math.PI / 180);
-  if (flipH) ctx.scale(-1, 1);
-  if (flipV) ctx.scale(1, -1);
-  ctx.translate(-W/2, -H/2);
-  
-  strokes.forEach(s => drawGlow(ctx, s.pts, s.color, s.size));
-  if (currentStroke) drawGlow(ctx, currentStroke.pts, currentStroke.color, currentStroke.size);
-  
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // outer glow
+  ctx.shadowColor = color;
+  ctx.shadowBlur = size * 6;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = size * 0.5;
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const mx = (pts[i-1].x + pts[i].x) / 2;
+    const my = (pts[i-1].y + pts[i].y) / 2;
+    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, mx, my);
+  }
+  ctx.stroke();
+
+  // core line
+  ctx.shadowBlur = size * 2;
+  ctx.lineWidth = size;
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const mx = (pts[i-1].x + pts[i].x) / 2;
+    const my = (pts[i-1].y + pts[i].y) / 2;
+    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, mx, my);
+  }
+  ctx.stroke();
+
   ctx.restore();
 }
 
-function onResults(results) {
-  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-    cursor.style.display = 'none';
-    statusEl.textContent = '✋ Show your hand to start';
-    if (isDrawing) { if (currentStroke) { strokes.push(currentStroke); currentStroke = null; } isDrawing = false; }
-    return;
-  }
+// ─── Main App ────────────────────────────────────────────────────
+function App() {
+  const videoRef   = useRef(null);
+  const canvasRef  = useRef(null);
+  const overlayRef = useRef(null); // hand skeleton preview
 
-  const lms = results.multiHandLandmarks[0];
-  const tip = getLandmarkPos(lms[8]);
-  
-  cursor.style.display = 'block';
-  cursor.style.left = tip.x + 'px';
-  cursor.style.top = tip.y + 'px';
-  cursor.style.borderColor = currentColor;
-  cursor.style.boxShadow = `0 0 8px ${currentColor}`;
+  // mutable state via refs (no re-render needed every frame)
+  const strokesRef      = useRef([]);  // [{pts,color,size}]
+  const liveRef         = useRef(null);
+  const smoothPosRef    = useRef(null);
+  const prevPinchRef    = useRef(false);
+  const colorRef        = useRef(COLORS[0].hex);
+  const sizeRef         = useRef(5);
 
-  const pinching = isPinching(lms);
-  const extended = countExtended(lms);
-  
-  if (pinching) {
-    if (!lastPinch) {
-      currentStroke = { pts: [tip], color: currentColor, size: brushSize };
-      isDrawing = true;
-    } else if (currentStroke) {
-      currentStroke.pts.push(tip);
+  // React UI state
+  const [color,    setColor]  = useState(COLORS[0].hex);
+  const [brushSz,  setBrushSz]= useState(5);
+  const [status,   setStatus] = useState('Kamera yuklanmoqda…');
+  const [mode,     setMode]   = useState('HOVERING');
+  const [ready,    setReady]  = useState(false);
+
+  // keep refs in sync
+  useEffect(()=>{ colorRef.current = color; },[color]);
+  useEffect(()=>{ sizeRef.current  = brushSz; },[brushSz]);
+
+  // ── Full redraw ──────────────────────────────────────────────
+  const redraw = useCallback(() => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+
+    for (const s of strokesRef.current) drawNeonPath(ctx, s.pts, s.color, s.size);
+    if (liveRef.current) drawNeonPath(ctx, liveRef.current.pts, liveRef.current.color, liveRef.current.size);
+  }, []);
+
+  // ── Resize handler ───────────────────────────────────────────
+  useEffect(() => {
+    function resize() {
+      const cv = canvasRef.current;
+      const ov = overlayRef.current;
+      if (!cv || !ov) return;
+      cv.width  = window.innerWidth;
+      cv.height = window.innerHeight;
+      ov.width  = window.innerWidth;
+      ov.height = window.innerHeight;
+      redraw();
     }
-    modeLabel.textContent = '✍️ DRAWING';
-    statusEl.textContent = 'Pinch to draw — release to lift pen';
-  } else {
-    if (lastPinch && currentStroke) {
-      strokes.push(currentStroke);
-      currentStroke = null;
-      isDrawing = false;
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, [redraw]);
+
+  // ── MediaPipe hand results handler ──────────────────────────
+  const onResults = useCallback((results) => {
+    const cv = canvasRef.current;
+    const ov = overlayRef.current;
+    if (!cv || !ov) return;
+
+    const W = cv.width, H = cv.height;
+
+    // Draw hand skeleton on overlay canvas
+    const octx = ov.getContext('2d');
+    octx.clearRect(0, 0, W, H);
+
+    if (!results.multiHandLandmarks?.length) {
+      // hand lost → finalize any live stroke
+      if (liveRef.current?.pts.length > 3) {
+        strokesRef.current.push(liveRef.current);
+      }
+      liveRef.current   = null;
+      prevPinchRef.current = false;
+      smoothPosRef.current = null;
+      setMode('NO HAND');
+      setStatus('✋ Qo\'lingizni ko\'rsating');
+      redraw();
+      return;
     }
-    if (extended >= 4) {
-      modeLabel.textContent = '🖐 MOVE MODE';
-      statusEl.textContent = 'Open hand — pinch index+thumb to draw';
+
+    const lms = results.multiHandLandmarks[0];
+
+    // Convert landmark to screen coords (mirrored)
+    function lp(i) { return { x: (1 - lms[i].x) * W, y: lms[i].y * H }; }
+
+    const indexTip   = lp(8);
+    const indexPip   = lp(6);
+    const thumbTip   = lp(4);
+    const middleTip  = lp(12);
+    const middlePip  = lp(10);
+    const ringTip    = lp(16);
+    const ringPip    = lp(14);
+    const pinkyTip   = lp(20);
+    const wrist      = lp(0);
+
+    // hand size for normalizing distances
+    const handSize = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y);
+
+    // pinch ratio
+    const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+    const pinchRatio = pinchDist / Math.max(handSize, 1);
+    const isPinch = pinchRatio < PINCH_THRESHOLD;
+
+    // finger extension
+    function extended(tip, pip) { return tip.y < pip.y - handSize * 0.03; }
+    const idxUp   = extended(indexTip,  indexPip);
+    const midUp   = extended(middleTip, middlePip);
+    const ringUp  = extended(ringTip,   ringPip);
+
+    // Smooth cursor position
+    if (!smoothPosRef.current) smoothPosRef.current = { ...indexTip };
+    smoothPosRef.current.x = lerp(smoothPosRef.current.x, indexTip.x, SMOOTHING);
+    smoothPosRef.current.y = lerp(smoothPosRef.current.y, indexTip.y, SMOOTHING);
+    const { x: fx, y: fy } = smoothPosRef.current;
+
+    // Draw skeleton overlay
+    octx.save();
+    octx.strokeStyle = 'rgba(255,255,255,0.25)';
+    octx.lineWidth = 1;
+    const CONN = Hands.HAND_CONNECTIONS || [
+      [0,1],[1,2],[2,3],[3,4],
+      [0,5],[5,6],[6,7],[7,8],
+      [5,9],[9,10],[10,11],[11,12],
+      [9,13],[13,14],[14,15],[15,16],
+      [13,17],[17,18],[18,19],[19,20],[0,17]
+    ];
+    for (const [a,b] of CONN) {
+      const pa = lp(a), pb = lp(b);
+      octx.beginPath(); octx.moveTo(pa.x,pa.y); octx.lineTo(pb.x,pb.y); octx.stroke();
+    }
+    for (let i = 0; i < 21; i++) {
+      const p = lp(i);
+      octx.beginPath();
+      octx.arc(p.x, p.y, i===8?6:3, 0, Math.PI*2);
+      octx.fillStyle = i===8 ? colorRef.current : 'rgba(255,255,255,0.5)';
+      octx.shadowColor = i===8 ? colorRef.current : 'transparent';
+      octx.shadowBlur  = i===8 ? 10 : 0;
+      octx.fill();
+    }
+    octx.restore();
+
+    // ── Gesture → action ────────────────────────────────────────
+    if (isPinch && idxUp) {
+      // DRAWING — pinch while index up
+      setMode('DRAWING ✏️');
+      setStatus('Pinch bosib yozyapsiz — qo\'ling');
+
+      if (!prevPinchRef.current) {
+        // start new stroke
+        liveRef.current = { pts: [{ x: fx, y: fy }], color: colorRef.current, size: sizeRef.current };
+      } else if (liveRef.current) {
+        const pts = liveRef.current.pts;
+        const last = pts[pts.length - 1];
+        // only add point if moved enough (debounce jitter)
+        if (Math.hypot(fx - last.x, fy - last.y) > 1.5) {
+          pts.push({ x: fx, y: fy });
+        }
+      }
     } else {
-      modeLabel.textContent = '✌️ HOVER';
-      statusEl.textContent = 'Pinch index+thumb to start drawing';
+      // Released pinch → finalize stroke
+      if (prevPinchRef.current && liveRef.current?.pts.length > 3) {
+        strokesRef.current.push(liveRef.current);
+        liveRef.current = null;
+      }
+
+      if (!isPinch && idxUp && !midUp) {
+        setMode('READY ☝️');
+        setStatus('Pinch qiling (bosh + ko\'rsatkich) — yozish uchun');
+      } else if (idxUp && midUp && !ringUp) {
+        setMode('✌️ SELECT');
+        setStatus('Ikki barmog\' — tanlov rejimi');
+      } else if (!idxUp) {
+        setMode('🖐 HOVERING');
+        setStatus('Ko\'rsatkich barmog\'ingizni ko\'taring');
+      } else {
+        setMode('HOVERING');
+        setStatus('Ko\'rsatkich barmog\'ingizni ko\'taring');
+      }
     }
-  }
 
-  lastPinch = pinching;
-  redraw();
+    prevPinchRef.current = isPinch;
+    redraw();
+  }, [redraw]);
+
+  // ── Init camera + MediaPipe ──────────────────────────────────
+  useEffect(() => {
+    let camera = null;
+    let hands  = null;
+
+    async function init() {
+      try {
+        setStatus('Kamera ruxsati so\'ralmoqda…');
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: 1280, height: 720 }
+        });
+        videoRef.current.srcObject = stream;
+        setStatus('Model yuklanmoqda…');
+
+        hands = new Hands({
+          locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
+        });
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.8,
+          minTrackingConfidence: 0.7,
+        });
+        hands.onResults(onResults);
+
+        camera = new Camera(videoRef.current, {
+          onFrame: async () => { await hands.send({ image: videoRef.current }); },
+          width: 1280, height: 720
+        });
+        camera.start();
+
+        setTimeout(() => {
+          setReady(true);
+          setStatus('✋ Qo\'lingizni ko\'rsating');
+        }, 2000);
+      } catch(e) {
+        setStatus('⚠️ Kamera xatosi: ' + e.message);
+        console.error(e);
+      }
+    }
+    init();
+    return () => { camera?.stop(); hands?.close(); };
+  }, [onResults]);
+
+  // ── UI actions ───────────────────────────────────────────────
+  const undo  = () => { strokesRef.current.pop(); redraw(); };
+  const clear = () => { strokesRef.current = []; liveRef.current = null; redraw(); };
+
+  const modeColor = mode.includes('DRAWING') ? '#00ffcc'
+                  : mode.includes('SELECT')  ? '#4fc3f7'
+                  : 'rgba(255,255,255,0.4)';
+
+  return (
+    <div style={{ position:'relative', width:'100vw', height:'100vh', background:'#0b0b0f', overflow:'hidden' }}>
+
+      {/* Video bg — faint */}
+      <video
+        ref={videoRef}
+        autoPlay muted playsInline
+        style={{
+          position:'absolute', inset:0, width:'100%', height:'100%',
+          objectFit:'cover', transform:'scaleX(-1)',
+          opacity: ready ? 0.18 : 0, transition:'opacity 1s',
+          pointerEvents:'none',
+        }}
+      />
+
+      {/* Drawing canvas */}
+      <canvas
+        ref={canvasRef}
+        style={{ position:'absolute', inset:0, pointerEvents:'none' }}
+      />
+
+      {/* Hand skeleton overlay */}
+      <canvas
+        ref={overlayRef}
+        style={{ position:'absolute', inset:0, pointerEvents:'none', opacity:0.85 }}
+      />
+
+      {/* Loading screen */}
+      {!ready && (
+        <div style={{
+          position:'absolute', inset:0, display:'flex', flexDirection:'column',
+          alignItems:'center', justifyContent:'center', gap:20,
+          background:'rgba(11,11,15,0.95)', zIndex:100,
+        }}>
+          <div style={{ fontSize:32, letterSpacing:'.3em', color:'rgba(255,255,255,.8)', fontWeight:300 }}>
+            AIR WRITE
+          </div>
+          <div style={{
+            width:36, height:36, border:'1.5px solid rgba(255,255,255,.1)',
+            borderTopColor:'rgba(0,255,204,.7)', borderRadius:'50%',
+            animation:'spin 1s linear infinite',
+          }}/>
+          <div style={{ fontSize:11, letterSpacing:'.15em', color:'rgba(255,255,255,.35)', textTransform:'uppercase' }}>
+            {status}
+          </div>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+
+      {/* Top-left mode badge */}
+      <div style={{
+        position:'absolute', top:16, left:16, zIndex:20,
+        fontSize:11, letterSpacing:'.12em', textTransform:'uppercase',
+        color: modeColor, background:'rgba(0,0,0,0.6)',
+        padding:'5px 14px', borderRadius:100,
+        border:`0.5px solid ${modeColor}40`,
+        transition:'color .3s, border-color .3s',
+        fontWeight:600,
+      }}>
+        {mode}
+      </div>
+
+      {/* Right toolbar */}
+      <div style={{
+        position:'absolute', right:16, top:'50%', transform:'translateY(-50%)',
+        display:'flex', flexDirection:'column', gap:10, zIndex:20,
+        background:'rgba(15,15,20,0.8)', backdropFilter:'blur(12px)',
+        border:'0.5px solid rgba(255,255,255,0.08)',
+        borderRadius:16, padding:'14px 10px',
+      }}>
+        {/* Colors */}
+        {COLORS.map(c => (
+          <button
+            key={c.hex}
+            title={c.label}
+            onClick={() => setColor(c.hex)}
+            style={{
+              width:28, height:28, borderRadius:'50%',
+              background: c.hex,
+              border: color === c.hex ? '2.5px solid white' : '2px solid rgba(255,255,255,0.15)',
+              cursor:'pointer', transition:'transform .15s, border .15s',
+              transform: color === c.hex ? 'scale(1.3)' : 'scale(1)',
+              boxShadow: color === c.hex ? `0 0 10px ${c.hex}80` : 'none',
+            }}
+          />
+        ))}
+
+        <div style={{ height:0.5, background:'rgba(255,255,255,0.1)', margin:'4px 0' }}/>
+
+        {/* Brush size */}
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+          <button onClick={() => setBrushSz(s => Math.min(s+2, 24))} style={btnStyle}>+</button>
+          <div style={{
+            width:28, height:28, borderRadius:'50%',
+            background: color,
+            display:'flex', alignItems:'center', justifyContent:'center',
+            fontSize: Math.max(8, brushSz*1.2), color:'#000', fontWeight:600,
+            boxShadow:`0 0 8px ${color}60`,
+            flexShrink:0,
+          }}/>
+          <button onClick={() => setBrushSz(s => Math.max(s-2, 1))} style={btnStyle}>−</button>
+        </div>
+
+        <div style={{ height:0.5, background:'rgba(255,255,255,0.1)', margin:'4px 0' }}/>
+
+        {/* Undo / Clear */}
+        <button onClick={undo}  style={btnStyle} title="Undo">↩</button>
+        <button onClick={clear} style={{...btnStyle, color:'#ff6b6b'}} title="Clear">✕</button>
+      </div>
+
+      {/* Bottom status */}
+      <div style={{
+        position:'absolute', bottom:20, left:'50%', transform:'translateX(-50%)',
+        fontSize:11, letterSpacing:'.1em', textTransform:'uppercase',
+        color:'rgba(255,255,255,.3)', background:'rgba(0,0,0,0.5)',
+        padding:'5px 16px', borderRadius:100, zIndex:20,
+        pointerEvents:'none', whiteSpace:'nowrap',
+        transition:'opacity .4s',
+        opacity: ready ? 1 : 0,
+      }}>
+        {status}
+      </div>
+
+      {/* Gesture guide — top center */}
+      <div style={{
+        position:'absolute', top:16, left:'50%', transform:'translateX(-50%)',
+        fontSize:11, letterSpacing:'.08em',
+        color:'rgba(255,255,255,.2)',
+        pointerEvents:'none', zIndex:20,
+        whiteSpace:'nowrap',
+        opacity: ready ? 1 : 0, transition:'opacity 1s',
+      }}>
+        ☝️ Barmog'ni ko'tar · 🤏 Pinch = Yoz · ✌️ = Tanla
+      </div>
+    </div>
+  );
 }
 
-async function init() {
-  statusEl.textContent = 'Loading hand tracking…';
-  
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
-    video.srcObject = stream;
-    statusEl.textContent = 'Camera ready — loading AI…';
+const btnStyle = {
+  background:'rgba(255,255,255,0.06)',
+  border:'0.5px solid rgba(255,255,255,0.15)',
+  color:'rgba(255,255,255,0.7)',
+  width:28, height:28,
+  borderRadius:8,
+  fontSize:14, fontWeight:600,
+  cursor:'pointer',
+  display:'flex', alignItems:'center', justifyContent:'center',
+  fontFamily:'JetBrains Mono, monospace',
+  transition:'background .15s',
+};
 
-    const hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}` });
-    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.6 });
-    hands.onResults(onResults);
-
-    const camera = new Camera(video, {
-      onFrame: async () => { await hands.send({ image: video }); },
-      width: 640, height: 480
-    });
-    camera.start();
-    statusEl.textContent = '✋ Show your hand to start';
-  } catch(e) {
-    statusEl.textContent = '⚠️ Camera access denied — please allow camera';
-    console.error(e);
-  }
-}
-
-init();
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
+</body>
+</html>
