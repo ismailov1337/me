@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Air Draw</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+
+  #container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+  #video {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; transform: scaleX(-1); opacity: 0.38;
+  }
+
+  #drawCanvas, #overlayCanvas {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  }
+  #overlayCanvas { pointer-events: none; }
+
+  #hud {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 20; pointer-events: none; text-align: center;
+  }
+  #gesture-display {
+    display: inline-block;
+    background: rgba(0,0,0,0.72); border: 1px solid rgba(255,255,255,0.18);
+    color: #fff; font-size: 13px; padding: 7px 22px;
+    border-radius: 30px; letter-spacing: 0.12em; min-width: 260px;
+  }
+
+  #legend {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(0,0,0,0.72); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px; padding: 12px 16px;
+    color: rgba(255,255,255,0.78); font-size: 12px; line-height: 1.9;
+    z-index: 20; min-width: 200px;
+  }
+  #legend .lbl { font-size: 10px; color: rgba(255,255,255,0.35); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; }
+
+  #brush-info {
+    position: absolute; top: 14px; right: 14px;
+    background: rgba(0,0,0,0.72); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px; padding: 10px 16px;
+    color: rgba(255,255,255,0.78); font-size: 12px; z-index: 20; text-align: center;
+  }
+  #brush-dot {
+    display: inline-block; border-radius: 50%; vertical-align: middle; margin-right: 6px;
+    transition: all 0.2s;
+  }
+
+  #loading {
+    position: absolute; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; color: #fff; gap: 18px;
+  }
+  #loading .big { font-size: 30px; font-weight: bold; letter-spacing: 0.25em; text-transform: uppercase; background: linear-gradient(90deg,#00ffcc,#ff3cac); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  #loading .sub { font-size: 12px; color: rgba(255,255,255,0.45); letter-spacing: 0.1em; }
+  .spin { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #00ffcc; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #flash {
+    position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 44px; font-weight: bold; color: #fff; letter-spacing: 0.1em; text-transform: uppercase;
+    text-shadow: 0 0 40px rgba(255,255,255,0.9);
+    pointer-events: none; z-index: 30; opacity: 0; transition: opacity 0.25s;
+  }
+
+  #lock-bar {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px; padding: 5px 16px; font-size: 11px; color: rgba(255,255,255,0.5);
+    z-index: 20; letter-spacing: 0.1em; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="loading">
+    <div class="big">AIR DRAW</div>
+    <div class="spin"></div>
+    <div class="sub" id="load-txt">Requesting camera…</div>
+  </div>
+
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="drawCanvas"></canvas>
+  <canvas id="overlayCanvas"></canvas>
+
+  <div id="legend">
+    <div class="lbl">Gestures</div>
+    ☝️ &nbsp;Index only → DRAW<br>
+    ✌️ &nbsp;2 fingers → ERASE<br>
+    🤟 &nbsp;3 fingers → COLOR<br>
+    🖐️ &nbsp;Open palm → MOVE<br>
+    🤙 &nbsp;Pinch → ROTATE<br>
+    👌 &nbsp;OK sign → SCALE<br>
+    👊 &nbsp;Fist (hold 1s) → CLEAR
+  </div>
+
+  <div id="brush-info">
+    <span id="brush-dot"></span><span id="brush-size-txt">5px</span>
+  </div>
+
+  <div id="lock-bar">—</div>
+
+  <div id="hud"><div id="gesture-display">Show your hand ✋</div></div>
+  <div id="flash"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js" crossorigin="anonymous"></script>
+<script>
+const drawCanvas    = document.getElementById('drawCanvas');
+const overlayCanvas = document.getElementById('overlayCanvas');
+const dctx = drawCanvas.getContext('2d');
+const octx = overlayCanvas.getContext('2d');
+const video         = document.getElementById('video');
+const loading       = document.getElementById('loading');
+const loadTxt       = document.getElementById('load-txt');
+const gestureDisp   = document.getElementById('gesture-display');
+const flashEl       = document.getElementById('flash');
+const lockBar       = document.getElementById('lock-bar');
+const brushDot      = document.getElementById('brush-dot');
+const brushSizeTxt  = document.getElementById('brush-size-txt');
+
+let W, H;
+function resize() {
+  W = drawCanvas.width = overlayCanvas.width = window.innerWidth;
+  H = drawCanvas.height = overlayCanvas.height = window.innerHeight;
+  redrawAll();
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Colors / brush ──────────────────────────────────────────────────────────
+const COLORS = ['#00ffcc','#ff3cac','#ffd700','#4fc3f7','#ff6b35','#c678ff','#ff4444','#ffffff'];
+let colorIdx = 0;
+let currentColor = COLORS[colorIdx];
+let brushSize = 5;
+const ERASER_SIZE = 36;
+
+function updateBrushUI() {
+  const s = Math.max(8, Math.min(brushSize * 2, 24));
+  brushDot.style.width = brushDot.style.height = s + 'px';
+  brushDot.style.background = currentColor;
+  brushDot.style.boxShadow = `0 0 ${s}px ${currentColor}`;
+  brushSizeTxt.textContent = brushSize + 'px';
+}
+updateBrushUI();
+
+// ── Stroke storage ──────────────────────────────────────────────────────────
+let strokes      = [];
+let activeStroke = null;
+
+// ── Canvas transform ────────────────────────────────────────────────────────
+let cRot = 0, cScale = 1, cOX = 0, cOY = 0;
+
+// ── Gesture debounce state machine ──────────────────────────────────────────
+// Raw gestures must hold for LOCK_FRAMES before becoming the locked gesture.
+// This kills false positives: 1-finger briefly reading as fist, etc.
+let lockedGesture   = 'NONE';
+let candidateGest   = 'NONE';
+let candidateFrames = 0;
+const LOCK_FRAMES   = 5;   // ~160ms at 30fps — fast enough to feel instant
+
+// Per-gesture counters
+let drawing       = false;
+let fistFrames    = 0;
+const FIST_HOLD   = 28;   // ~0.9s — needs deliberate hold, won't fire by accident
+let colorCooldown = 0;
+let prevPinchAngle = null;
+let prevScaleDist  = null;
+let prevPalmPos    = null;
+
+// ── Exponential moving average smoothing on index tip ───────────────────────
+// This is what makes drawing feel fluid. Raw MediaPipe landmarks jitter
+// frame-to-frame by several pixels. We lerp towards the raw value each frame.
+let smoothX = null, smoothY = null;
+const SMOOTH = 0.6;  // higher = more responsive but jitterier; 0.6 is the sweet spot
+
+function getSmoothTip(lms) {
+  const rx = (1 - lms[8].x) * W;
+  const ry = lms[8].y * H;
+  if (smoothX === null) { smoothX = rx; smoothY = ry; }
+  else { smoothX += (rx - smoothX) * SMOOTH; smoothY += (ry - smoothY) * SMOOTH; }
+  return { x: smoothX, y: smoothY };
+}
+function resetSmooth() { smoothX = null; smoothY = null; }
+
+// ── Gesture classifier ──────────────────────────────────────────────────────
+// Stricter than before: fist requires thumb tucked, not just fingers curled.
+// This is the main fix for "1 finger clearing everything".
+
+function fingerUp(lms, tip, pip) {
+  return lms[tip].y < lms[pip].y - 0.035;  // increased threshold — less false positives
+}
+
+function thumbExtended(lms) {
+  return Math.hypot(lms[4].x - lms[5].x, lms[4].y - lms[5].y) > 0.08;
+}
+
+function isPinch(lms) {
+  return Math.hypot(lms[4].x - lms[8].x, lms[4].y - lms[8].y) < 0.055;
+}
+
+function isOK(lms) {
+  return Math.hypot(lms[4].x - lms[12].x, lms[4].y - lms[12].y) < 0.065
+      && fingerUp(lms, 8, 6);
+}
+
+function isFist(lms) {
+  // ALL 4 fingers curled AND thumb tucked in
+  return !fingerUp(lms, 8, 6)
+      && !fingerUp(lms, 12, 10)
+      && !fingerUp(lms, 16, 14)
+      && !fingerUp(lms, 20, 18)
+      && !thumbExtended(lms);
+}
+
+function rawGesture(lms) {
+  if (isFist(lms))  return 'FIST';
+  if (isPinch(lms)) return 'PINCH';
+  if (isOK(lms))    return 'OK';
+
+  const idx  = fingerUp(lms, 8,  6);
+  const mid  = fingerUp(lms, 12, 10);
+  const ring = fingerUp(lms, 16, 14);
+  const pink = fingerUp(lms, 20, 18);
+  const n    = [idx, mid, ring, pink].filter(Boolean).length;
+
+  if (n === 1 && idx)            return 'DRAW';
+  if (n === 2 && idx && mid)     return 'ERASE';
+  if (n === 3 && idx && mid && ring) return 'COLOR';
+  if (n >= 4)                    return 'MOVE';
+  return 'NONE';
+}
+
+// ── Catmull-Rom spline rendering ────────────────────────────────────────────
+// Replaces quadratic midpoint method. Curves pass THROUGH the actual points
+// instead of approximating them, giving true cursive pen feel.
+
+function catmullRom(ctx, pts) {
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  if (pts.length === 2) { ctx.lineTo(pts[1].x, pts[1].y); return; }
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(i - 1, 0)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(i + 2, pts.length - 1)];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  }
+}
+
+function renderStroke(ctx, stroke) {
+  if (!stroke || stroke.pts.length < 1) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (stroke.isEraser) {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = 'rgba(0,0,0,1)';
+    ctx.lineWidth = stroke.size;
+    if (stroke.pts.length === 1) {
+      ctx.beginPath();
+      ctx.arc(stroke.pts[0].x, stroke.pts[0].y, stroke.size / 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,1)';
+      ctx.fill();
+    } else {
+      catmullRom(ctx, stroke.pts);
+      ctx.stroke();
+    }
+  } else {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = stroke.color;
+    ctx.lineWidth = stroke.size;
+    ctx.shadowColor = stroke.color;
+    ctx.shadowBlur = stroke.size * 2.5;
+    ctx.globalAlpha = 0.96;
+    if (stroke.pts.length === 1) {
+      ctx.beginPath();
+      ctx.arc(stroke.pts[0].x, stroke.pts[0].y, stroke.size / 2, 0, Math.PI * 2);
+      ctx.fillStyle = stroke.color;
+      ctx.fill();
+    } else {
+      catmullRom(ctx, stroke.pts);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function redrawAll() {
+  dctx.clearRect(0, 0, W, H);
+  dctx.save();
+  dctx.translate(W / 2 + cOX, H / 2 + cOY);
+  dctx.rotate(cRot * Math.PI / 180);
+  dctx.scale(cScale, cScale);
+  dctx.translate(-W / 2, -H / 2);
+  strokes.forEach(s => renderStroke(dctx, s));
+  if (activeStroke) renderStroke(dctx, activeStroke);
+  dctx.restore();
+}
+
+// ── Overlay ─────────────────────────────────────────────────────────────────
+function drawOverlay(lms, gesture, tipPos) {
+  octx.clearRect(0, 0, W, H);
+  if (!lms) return;
+
+  [4, 8, 12, 16, 20].forEach(i => {
+    const px = (1 - lms[i].x) * W;
+    const py = lms[i].y * H;
+    octx.beginPath();
+    octx.arc(px, py, i === 8 && gesture === 'DRAW' ? 7 : 4, 0, Math.PI * 2);
+    octx.fillStyle = i === 8 && gesture === 'DRAW' ? currentColor : 'rgba(255,255,255,0.35)';
+    octx.shadowColor = i === 8 && gesture === 'DRAW' ? currentColor : 'transparent';
+    octx.shadowBlur  = i === 8 && gesture === 'DRAW' ? 14 : 0;
+    octx.fill();
+  });
+
+  if (!tipPos) return;
+
+  const isErasing = gesture === 'ERASE';
+  const r = isErasing ? ERASER_SIZE / 2 : Math.max(brushSize + 6, 14);
+  octx.beginPath();
+  octx.arc(tipPos.x, tipPos.y, r, 0, Math.PI * 2);
+  octx.strokeStyle = isErasing ? 'rgba(255,80,80,0.85)' : currentColor;
+  octx.lineWidth = 2;
+  octx.shadowColor = octx.strokeStyle;
+  octx.shadowBlur = 14;
+  octx.stroke();
+
+  octx.beginPath();
+  octx.arc(tipPos.x, tipPos.y, 3, 0, Math.PI * 2);
+  octx.fillStyle = gesture === 'DRAW' ? currentColor : 'rgba(255,255,255,0.6)';
+  octx.shadowBlur = 0;
+  octx.fill();
+
+  if (gesture === 'FIST') {
+    const prog = Math.min(fistFrames / FIST_HOLD, 1);
+    octx.beginPath();
+    octx.arc(tipPos.x, tipPos.y, 46, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2);
+    octx.strokeStyle = '#ff4444';
+    octx.lineWidth = 5;
+    octx.shadowColor = '#ff4444';
+    octx.shadowBlur = 12;
+    octx.stroke();
+  }
+}
+
+// ── Flash feedback ───────────────────────────────────────────────────────────
+let flashTimer;
+function flash(txt) {
+  flashEl.textContent = txt;
+  flashEl.style.opacity = '1';
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { flashEl.style.opacity = '0'; }, 800);
+}
+
+function commitStroke() {
+  if (activeStroke && activeStroke.pts.length > 0) strokes.push(activeStroke);
+  activeStroke = null;
+  drawing = false;
+}
+
+// ── Main handler ─────────────────────────────────────────────────────────────
+function onResults(results) {
+  const lmsList = results.multiHandLandmarks;
+
+  if (!lmsList || lmsList.length === 0) {
+    octx.clearRect(0, 0, W, H);
+    commitStroke();
+    resetSmooth();
+    lockedGesture = candidateGest = 'NONE';
+    candidateFrames = fistFrames = 0;
+    prevPinchAngle = prevScaleDist = prevPalmPos = null;
+    gestureDisp.innerHTML = 'Show your hand ✋';
+    lockBar.textContent = '—';
+    return;
+  }
+
+  const lms = lmsList[0];
+  const raw = rawGesture(lms);
+
+  // Debounce: require raw gesture to hold LOCK_FRAMES before switching
+  if (raw === candidateGest) {
+    candidateFrames++;
+  } else {
+    candidateGest = raw;
+    candidateFrames = 1;
+  }
+
+  // Switch locked gesture if candidate held long enough.
+  // Special case: don't add latency to ongoing DRAW — keep it immediate.
+  const shouldSwitch = (candidateFrames >= LOCK_FRAMES)
+    || (lockedGesture === 'DRAW' && raw === 'DRAW')
+    || (lockedGesture === 'NONE');
+
+  if (shouldSwitch && raw !== lockedGesture) {
+    if (lockedGesture === 'DRAW' || lockedGesture === 'ERASE') commitStroke();
+    if (lockedGesture !== 'FIST') fistFrames = 0;
+    if (raw !== 'PINCH') prevPinchAngle = null;
+    if (raw !== 'OK')    prevScaleDist  = null;
+    if (raw !== 'MOVE')  prevPalmPos    = null;
+    lockedGesture = raw;
+  }
+
+  lockBar.textContent = lockedGesture;
+  colorCooldown = Math.max(0, colorCooldown - 1);
+
+  const tipPos   = getSmoothTip(lms);
+  const wristPos = { x: (1 - lms[0].x) * W, y: lms[0].y * H };
+
+  switch (lockedGesture) {
+
+    case 'DRAW': {
+      if (!drawing) {
+        activeStroke = { pts: [{ ...tipPos }], color: currentColor, size: brushSize, isEraser: false };
+        drawing = true;
+      } else if (activeStroke) {
+        const last = activeStroke.pts[activeStroke.pts.length - 1];
+        // Min distance filter: skip if barely moved (prevents blobby overlap artifacts)
+        if (Math.hypot(tipPos.x - last.x, tipPos.y - last.y) > 2) {
+          activeStroke.pts.push({ ...tipPos });
+        }
+        if (activeStroke.pts.length > 600) {
+          strokes.push(activeStroke);
+          activeStroke = { pts: [{ ...tipPos }], color: currentColor, size: brushSize, isEraser: false };
+        }
+      }
+      gestureDisp.innerHTML = `<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${currentColor};vertical-align:middle;margin-right:8px;box-shadow:0 0 8px ${currentColor}80"></span>DRAWING`;
+      break;
+    }
+
+    case 'ERASE': {
+      if (!drawing) {
+        activeStroke = { pts: [{ ...tipPos }], color: null, size: ERASER_SIZE, isEraser: true };
+        drawing = true;
+      } else if (activeStroke) {
+        const last = activeStroke.pts[activeStroke.pts.length - 1];
+        if (Math.hypot(tipPos.x - last.x, tipPos.y - last.y) > 1) activeStroke.pts.push({ ...tipPos });
+      }
+      gestureDisp.innerHTML = '✌️ ERASING';
+      break;
+    }
+
+    case 'COLOR': {
+      if (colorCooldown === 0) {
+        colorIdx = (colorIdx + 1) % COLORS.length;
+        currentColor = COLORS[colorIdx];
+        colorCooldown = 30;
+        updateBrushUI();
+        flash('🎨 ' + currentColor);
+      }
+      gestureDisp.innerHTML = `<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${currentColor};vertical-align:middle;margin-right:8px"></span>${currentColor.toUpperCase()}`;
+      break;
+    }
+
+    case 'MOVE': {
+      if (prevPalmPos) { cOX += wristPos.x - prevPalmPos.x; cOY += wristPos.y - prevPalmPos.y; }
+      prevPalmPos = { ...wristPos };
+      gestureDisp.innerHTML = '🖐️ MOVING';
+      break;
+    }
+
+    case 'PINCH': {
+      const angle = Math.atan2(tipPos.y - wristPos.y, tipPos.x - wristPos.x) * 180 / Math.PI;
+      if (prevPinchAngle !== null) {
+        let d = angle - prevPinchAngle;
+        if (d > 180) d -= 360;
+        if (d < -180) d += 360;
+        cRot += d * 0.45;
+      }
+      prevPinchAngle = angle;
+      gestureDisp.innerHTML = `🤙 ROTATE — ${Math.round(cRot)}°`;
+      break;
+    }
+
+    case 'OK': {
+      const idxPt  = { x: (1 - lms[8].x) * W,  y: lms[8].y * H };
+      const ringPt = { x: (1 - lms[16].x) * W, y: lms[16].y * H };
+      const dist = Math.hypot(idxPt.x - ringPt.x, idxPt.y - ringPt.y);
+      if (prevScaleDist !== null) {
+        const r = dist / prevScaleDist;
+        cScale = Math.max(0.25, Math.min(5, cScale * (1 + (r - 1) * 0.25)));
+      }
+      prevScaleDist = dist;
+      gestureDisp.innerHTML = `👌 SCALE — ${cScale.toFixed(2)}x`;
+      break;
+    }
+
+    case 'FIST': {
+      fistFrames++;
+      if (fistFrames >= FIST_HOLD) {
+        strokes = []; activeStroke = null; drawing = false;
+        cRot = 0; cScale = 1; cOX = 0; cOY = 0; fistFrames = 0;
+        flash('🗑 CLEARED');
+        dctx.clearRect(0, 0, W, H);
+      }
+      gestureDisp.innerHTML = `👊 HOLD TO CLEAR — ${Math.round(fistFrames / FIST_HOLD * 100)}%`;
+      break;
+    }
+
+    default: {
+      fistFrames = 0;
+      gestureDisp.innerHTML = '✋ Ready';
+    }
+  }
+
+  redrawAll();
+  drawOverlay(lms, lockedGesture, tipPos);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+async function boot() {
+  loadTxt.textContent = 'Requesting camera access…';
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+  } catch (e) {
+    loadTxt.textContent = '❌ Camera denied — allow it and reload';
+    return;
+  }
+  video.srcObject = stream;
+  await new Promise(r => { video.onloadedmetadata = r; });
+  video.play();
+  loadTxt.textContent = 'Loading hand tracking model…';
+
+  const hands = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
+  });
+  hands.setOptions({
+    maxNumHands: 1, modelComplexity: 1,
+    minDetectionConfidence: 0.78, minTrackingConfidence: 0.72
+  });
+  hands.onResults(onResults);
+
+  const cam = new Camera(video, {
+    onFrame: async () => { await hands.send({ image: video }); },
+    width: 1280, height: 720
+  });
+  cam.start();
+
+  await new Promise(r => setTimeout(r, 1100));
+  loading.style.transition = 'opacity 0.5s';
+  loading.style.opacity = '0';
+  setTimeout(() => loading.style.display = 'none', 500);
+}
+
+boot();
+</script>
+</body>
+</html>
