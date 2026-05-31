@@ -17,7 +17,6 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         html { scroll-behavior: smooth; }
 
         body {
@@ -52,7 +51,6 @@
           100% { opacity: 0; transform: translateY(110vh) rotate(360deg) scale(.6); }
         }
 
-        /* generate 18 petals via nth-child tricks */
         .petal:nth-child(1)  { left:4%;   background: #e8bfc4; animation-duration:9s;  animation-delay:0s; }
         .petal:nth-child(2)  { left:10%;  background: #d4a0a8; animation-duration:11s; animation-delay:1.5s; }
         .petal:nth-child(3)  { left:18%;  background: #f0cfd4; animation-duration:8s;  animation-delay:3s; }
@@ -161,35 +159,34 @@
           50%      { opacity: 1; }
         }
 
-        /* ── Photo Section ── */
+        /* ── Torn Photo Section ── */
         .photo-section {
           position: relative;
           z-index: 2;
           display: flex;
           justify-content: center;
-          padding: 80px 20px;
+          padding: 80px 20px 120px;
           background: var(--mist);
+          overflow: hidden;
         }
 
-        .photo-frame {
+        .torn-wrapper {
           position: relative;
           width: min(680px, 92vw);
+          display: flex;
+          gap: 0;
+          align-items: flex-start;
         }
 
-        .photo-frame::before {
-          content: '';
-          position: absolute;
-          top: -14px; left: -14px;
-          right: 14px; bottom: 14px;
-          border: 1px solid var(--blush);
-          z-index: 0;
-        }
-
-        .photo-frame img {
+        /* Left half */
+        .photo-half {
           position: relative;
-          z-index: 1;
-          width: 100%;
-          height: auto;
+          flex: 1;
+          overflow: hidden;
+        }
+
+        .photo-half img {
+          width: 200%;
           max-height: 80vh;
           object-fit: cover;
           object-position: center;
@@ -197,16 +194,113 @@
           filter: sepia(.12) brightness(1.03);
         }
 
-        .photo-caption {
+        .photo-half.left img {
+          margin-left: 0;
+        }
+
+        .photo-half.right img {
+          margin-left: -100%;
+        }
+
+        /* Torn edge on left half - right side */
+        .photo-half.left {
+          clip-path: polygon(
+            0% 0%,
+            100% 0%,
+            97% 4%,
+            100% 8%,
+            96% 12%,
+            99% 17%,
+            95% 22%,
+            98% 27%,
+            94% 31%,
+            97% 36%,
+            93% 41%,
+            96% 45%,
+            92% 50%,
+            95% 54%,
+            91% 59%,
+            94% 63%,
+            90% 68%,
+            93% 72%,
+            89% 77%,
+            92% 81%,
+            88% 86%,
+            91% 90%,
+            87% 95%,
+            90% 100%,
+            0% 100%
+          );
+          filter: drop-shadow(3px 0 6px rgba(107,45,62,0.18));
+        }
+
+        /* Torn edge on right half - left side */
+        .photo-half.right {
+          clip-path: polygon(
+            10% 0%,
+            100% 0%,
+            100% 100%,
+            10% 100%,
+            13% 95%,
+            10% 90%,
+            14% 86%,
+            11% 81%,
+            15% 77%,
+            12% 72%,
+            16% 68%,
+            13% 63%,
+            17% 59%,
+            14% 54%,
+            18% 50%,
+            15% 45%,
+            19% 41%,
+            16% 36%,
+            20% 31%,
+            17% 27%,
+            21% 22%,
+            18% 17%,
+            22% 12%,
+            19% 8%,
+            23% 4%,
+            20% 0%
+          );
+          filter: drop-shadow(-3px 0 6px rgba(107,45,62,0.18));
+        }
+
+        /* Rotate left half slightly left, right half slightly right */
+        .photo-half.left {
+          transform: rotate(-2.5deg) translateX(8px);
+          transform-origin: bottom center;
+        }
+
+        .photo-half.right {
+          transform: rotate(2.5deg) translateX(-8px);
+          transform-origin: bottom center;
+        }
+
+        /* Overlay frame decorations on each half */
+        .photo-half.left::before {
+          content: '';
           position: absolute;
-          bottom: -28px; right: -20px;
-          background: var(--deep);
-          color: var(--cream);
+          top: -10px; left: -10px;
+          right: 20px; bottom: 10px;
+          border: 1px solid var(--blush);
+          z-index: 3;
+          pointer-events: none;
+        }
+
+        .photo-caption-torn {
+          position: absolute;
+          bottom: -44px;
+          left: 50%;
+          transform: translateX(-50%);
+          color: var(--rose);
           font-family: 'Cormorant Garamond', serif;
           font-style: italic;
-          font-size: 1.05rem;
-          padding: 10px 20px;
-          z-index: 2;
+          font-size: 1.1rem;
+          white-space: nowrap;
+          opacity: 0.7;
+          letter-spacing: 0.05em;
         }
 
         /* ── Story ── */
@@ -328,6 +422,12 @@
           box-shadow: 0 0 0 3px var(--deep), 0 0 0 4px var(--gold);
         }
 
+        /* Breakup line dot is gray */
+        .tl-item.breakup .tl-line::before {
+          background: #7a8a8a;
+          box-shadow: 0 0 0 3px var(--deep), 0 0 0 4px #7a8a8a;
+        }
+
         .tl-body { padding-left: 8px; }
 
         .tl-event {
@@ -338,13 +438,32 @@
           margin-bottom: 6px;
         }
 
+        .tl-item.breakup .tl-event {
+          color: #a0b0b0;
+        }
+
+        .tl-item.breakup .tl-date {
+          color: #a0b0b0;
+        }
+
         .tl-desc {
           font-size: .82rem;
           line-height: 1.75;
           color: rgba(249,243,236,.65);
         }
 
-        /* ── Flowers & Ice Cream ── */
+        .tl-item.breakup .tl-desc {
+          color: rgba(160,176,176,.65);
+        }
+
+        /* Breakup divider line */
+        .tl-divider {
+          border: none;
+          border-top: 1px dashed rgba(160,176,176,0.3);
+          margin: 20px 0 40px;
+        }
+
+        /* ── Details ── */
         .details-section {
           position: relative;
           z-index: 2;
@@ -360,9 +479,7 @@
           .details-section { grid-template-columns: 1fr; }
         }
 
-        .detail-card {
-          text-align: center;
-        }
+        .detail-card { text-align: center; }
 
         .detail-icon {
           font-size: 3rem;
@@ -437,7 +554,6 @@
           70%     { transform: scale(1); }
         }
 
-        /* Thin gold ornament lines */
         .ornament {
           display: block;
           text-align: center;
@@ -451,7 +567,6 @@
 </head>
 <body>
 
-<!-- Falling petals -->
 <div class="petal-layer" aria-hidden="true">
     <div class="petal"></div><div class="petal"></div><div class="petal"></div>
     <div class="petal"></div><div class="petal"></div><div class="petal"></div>
@@ -472,15 +587,18 @@
     </div>
 </section>
 
-<!-- ── PHOTO ── -->
+<!-- ── TORN PHOTO ── -->
 <section class="photo-section">
-    <div class="photo-frame">
-        <!-- A beautiful romantic couple photo from Unsplash (free to use) -->
-        <img
-                src="holding-hands.jpg"
-                alt="Two hearts, one story"
-        />
-        <div class="photo-caption">Us ♡</div>
+    <div class="torn-wrapper">
+        <!-- Left half of the torn photo -->
+        <div class="photo-half left">
+            <img src="holding-hands.jpg" alt="Two hearts, one story" />
+        </div>
+        <!-- Right half of the torn photo -->
+        <div class="photo-half right">
+            <img src="holding-hands.jpg" alt="Two hearts, one story" />
+        </div>
+        <div class="photo-caption-torn">what was once whole ♡</div>
     </div>
 </section>
 
@@ -554,6 +672,18 @@
                 <p class="tl-desc">The story that doesn't end. New chapters still unwritten, new mornings still unlived, new laughter still unheard. All of it — ours.</p>
             </div>
         </div>
+
+        <hr class="tl-divider">
+
+        <div class="tl-item breakup">
+            <div class="tl-date">30 Apr<br>2026</div>
+            <div class="tl-line"></div>
+            <div class="tl-body">
+                <p class="tl-event">The Last Page</p>
+                <p class="tl-desc">Some stories don't end the way we imagined. This chapter closes here — not with anger, not with hate, but with the quiet ache of something that was once beautiful. The love was real. That will always be true.</p>
+            </div>
+        </div>
+
     </div>
 </section>
 
@@ -586,7 +716,6 @@
 </section>
 
 <script>
-    // Scroll-reveal for timeline items
     const items = document.querySelectorAll('.tl-item');
     const observer = new IntersectionObserver(entries => {
       entries.forEach((e, i) => {
