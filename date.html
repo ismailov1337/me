@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Special Question 💌</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a0a2e 0%, #2d1052 40%, #1a0a2e 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Georgia', serif;
+            overflow: hidden; position: relative;
+        }
+        .stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+        .star { position:absolute; background:white; border-radius:50%; animation: twinkle var(--d,3s) ease-in-out infinite var(--delay,0s); }
+        @keyframes twinkle { 0%,100%{opacity:0.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.3)} }
+        .heart-bg { position:fixed; font-size:20px; opacity:0.15; animation:floatUp var(--fd,8s) ease-in infinite var(--fdelay,0s); z-index:0; pointer-events:none; }
+        @keyframes floatUp { 0%{transform:translateY(110vh) rotate(0deg);opacity:0} 10%{opacity:0.15} 90%{opacity:0.1} 100%{transform:translateY(-10vh) rotate(30deg);opacity:0} }
+
+        .card {
+            position:relative; z-index:10;
+            background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
+            border-radius:24px; padding:3rem 3.5rem; max-width:520px; width:90%;
+            text-align:center; backdrop-filter:blur(20px); box-shadow:0 0 80px rgba(200,100,255,0.15);
+        }
+        .rose { font-size:56px; display:block; margin-bottom:1rem; animation:pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+        h1 { font-size:2rem; color:#f9d5e5; font-style:italic; margin-bottom:0.75rem; text-shadow:0 0 20px rgba(255,150,200,0.4); }
+        .subtitle { font-size:1.05rem; color:rgba(255,220,235,0.8); line-height:1.8; margin-bottom:2rem; }
+
+        .btn-group { display:flex; gap:16px; justify-content:center; align-items:center; flex-wrap:wrap; margin-top:1.5rem; min-height:60px; }
+        .btn-yes, .btn-no { padding:14px 36px; border:none; border-radius:50px; font-size:1.1rem; font-family:'Georgia',serif; cursor:pointer; transition:transform 0.2s,box-shadow 0.2s; }
+        .btn-yes { background:linear-gradient(135deg,#e91e8c,#c2185b); color:white; box-shadow:0 4px 20px rgba(233,30,140,0.5); }
+        .btn-yes:hover { transform:scale(1.06); box-shadow:0 6px 28px rgba(233,30,140,0.7); }
+        .btn-no { background:rgba(255,255,255,0.12); border:1.5px solid rgba(255,255,255,0.6); color:rgba(255,255,255,0.95); font-size:1rem; padding:12px 30px; position:static; transition:none; }
+        .btn-no:hover { background:rgba(255,255,255,0.2); }
+
+        #calendar-section { display:none; }
+        #calendar-section h2 { font-size:1.4rem; color:#f9d5e5; font-style:italic; margin-bottom:0.5rem; }
+        #calendar-section p { color:rgba(255,220,235,0.75); font-size:0.95rem; margin-bottom:1.5rem; }
+        .calendar { background:rgba(255,255,255,0.05); border-radius:16px; padding:1.25rem; margin-bottom:1.5rem; }
+        .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; color:#f9d5e5; font-size:1rem; }
+        .cal-nav { background:none; border:1px solid rgba(255,255,255,0.2); color:white; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; }
+        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+        .cal-day-name { color:rgba(255,200,220,0.5); font-size:0.72rem; padding-bottom:6px; }
+        .cal-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:0.85rem; color:rgba(255,255,255,0.75); cursor:pointer; transition:background 0.15s; }
+        .cal-day:hover:not(.empty):not(.past) { background:rgba(233,30,140,0.35); color:white; }
+        .cal-day.empty { cursor:default; }
+        .cal-day.past { opacity:0.25; cursor:default; }
+        .cal-day.today { border:1px solid rgba(233,30,140,0.6); color:#f9d5e5; }
+        .cal-day.selected { background:linear-gradient(135deg,#e91e8c,#c2185b); color:white; }
+
+        .time-section { margin-bottom:1.5rem; }
+        .time-section label { color:rgba(255,220,235,0.8); font-size:0.9rem; display:block; margin-bottom:8px; }
+        .time-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+        .time-slot { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:9px 4px; color:rgba(255,255,255,0.7); font-size:0.82rem; cursor:pointer; transition:background 0.15s; font-family:'Georgia',serif; }
+        .time-slot:hover { background:rgba(233,30,140,0.25); color:white; }
+        .time-slot.selected { background:linear-gradient(135deg,#e91e8c,#c2185b); color:white; border-color:transparent; }
+
+        .btn-confirm { background:linear-gradient(135deg,#e91e8c,#c2185b); color:white; border:none; border-radius:50px; padding:13px 40px; font-size:1rem; font-family:'Georgia',serif; cursor:pointer; box-shadow:0 4px 20px rgba(233,30,140,0.5); transition:transform 0.2s; }
+        .btn-confirm:hover { transform:scale(1.05); }
+        .btn-confirm:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+        #final-section { display:none; }
+        #final-section h2 { font-size:1.5rem; color:#f9d5e5; font-style:italic; margin-bottom:0.5rem; }
+        .date-display { background:rgba(233,30,140,0.12); border:1px solid rgba(233,30,140,0.3); border-radius:16px; padding:1.5rem; margin:1.5rem 0; }
+        .date-display p { color:rgba(255,220,235,0.85); font-size:1rem; margin-bottom:8px; }
+        .date-display .highlight { font-size:1.3rem; color:#f9d5e5; font-weight:bold; }
+        .btn-cancel { background:transparent; border:1px solid rgba(255,255,255,0.3); color:rgba(255,255,255,0.6); border-radius:50px; padding:10px 28px; font-size:0.9rem; font-family:'Georgia',serif; cursor:pointer; margin-top:0.5rem; transition:border-color 0.2s,color 0.2s; }
+        .btn-cancel:hover { border-color:rgba(255,100,150,0.5); color:rgba(255,180,200,0.9); }
+
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }
+        .modal-overlay.show { display:flex; }
+        .modal { background:rgba(30,10,60,0.97); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:2.5rem; max-width:360px; width:90%; text-align:center; backdrop-filter:blur(20px); box-shadow:0 0 60px rgba(200,100,255,0.2); }
+        .modal h3 { color:#f9d5e5; font-size:1.2rem; font-style:italic; margin-bottom:0.5rem; }
+        .modal p { color:rgba(255,200,220,0.65); font-size:0.88rem; margin-bottom:1.25rem; }
+        .modal input { width:100%; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.2); border-radius:10px; padding:11px 16px; color:white; font-size:1rem; font-family:'Georgia',serif; text-align:center; outline:none; margin-bottom:0.75rem; letter-spacing:2px; }
+        .modal input:focus { border-color:rgba(233,30,140,0.6); }
+        .modal-error { color:#ff8aaa; font-size:0.82rem; margin-bottom:0.75rem; min-height:18px; }
+        .modal-btns { display:flex; gap:10px; justify-content:center; }
+        .btn-modal-cancel,.btn-modal-ok { border-radius:50px; padding:10px 28px; font-size:0.9rem; font-family:'Georgia',serif; cursor:pointer; border:1px solid rgba(255,255,255,0.2); }
+        .btn-modal-cancel { background:transparent; color:rgba(255,255,255,0.6); }
+        .btn-modal-ok { background:linear-gradient(135deg,#e91e8c,#c2185b); color:white; border:none; }
+
+        #loading-screen { position:fixed; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg,#1a0a2e 0%,#2d1052 40%,#1a0a2e 100%); display:flex; align-items:center; justify-content:center; z-index:999; }
+        #loading-screen p { color:rgba(255,220,235,0.6); font-size:1rem; font-style:italic; }
+    </style>
+</head>
+<body>
+
+<div id="loading-screen"><p>✨ Loading...</p></div>
+<div class="stars" id="stars"></div>
+
+<!-- Section 1: Ask -->
+<div class="card" id="ask-section" style="display:none">
+    <span class="rose">🌹</span>
+    <h1>Will you go on a date with me?</h1>
+    <p class="subtitle">I've been thinking about this for a while...<br>There's no one else I'd rather spend time with. 💫</p>
+    <div class="btn-group" id="btn-group">
+        <button class="btn-yes" onclick="sayYes()">Yes! 💕</button>
+        <button class="btn-no" id="btn-no" onclick="moveNo()">No</button>
+    </div>
+</div>
+
+<!-- Section 2: Calendar -->
+<div class="card" id="calendar-section">
+    <span class="rose">🗓️</span>
+    <h2>When shall we meet?</h2>
+    <p>Pick a day and a time that works for you ✨</p>
+    <div class="calendar">
+        <div class="cal-header">
+            <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+            <span id="month-label"></span>
+            <button class="cal-nav" onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+    </div>
+    <div class="time-section">
+        <label>Choose a time 🕐</label>
+        <div class="time-grid" id="time-grid"></div>
+    </div>
+    <button class="btn-confirm" id="btn-confirm" onclick="confirmDate()" disabled>Confirm our date 💖</button>
+</div>
+
+<!-- Section 3: Final -->
+<div class="card" id="final-section">
+    <span class="rose">💖</span>
+    <h2>It's a date!</h2>
+    <div class="date-display">
+        <p>📅 <span class="highlight" id="display-date"></span></p>
+        <p>🕐 <span class="highlight" id="display-time"></span></p>
+    </div>
+    <p style="color:rgba(255,220,235,0.7);font-size:0.9rem;margin-bottom:1rem;">I can't wait to see you 🌙</p>
+    <button class="btn-cancel" onclick="openCancelModal()">Cancel</button>
+</div>
+
+<!-- Password Modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+        <h3>🔒 Are you sure?</h3>
+        <p>Enter the secret password to cancel</p>
+        <input type="password" id="pw-input" placeholder="••••••••••" onkeydown="if(event.key==='Enter')checkPassword()" />
+        <div class="modal-error" id="pw-error"></div>
+        <div class="modal-btns">
+            <button class="btn-modal-cancel" onclick="closeModal()">Go back</button>
+            <button class="btn-modal-ok" onclick="checkPassword()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Stars & hearts
+    const starsEl = document.getElementById('stars');
+    for(let i=0;i<120;i++){
+        const s=document.createElement('div'); s.className='star';
+        const sz=Math.random()*2.5+0.5;
+        s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${(Math.random()*4+2).toFixed(1)}s;--delay:${(Math.random()*4).toFixed(1)}s`;
+        starsEl.appendChild(s);
+    }
+    const harts=['❤️','💕','💗','💓','💞','✨','🌹'];
+    for(let i=0;i<14;i++){
+        const h=document.createElement('div'); h.className='heart-bg';
+        h.textContent=harts[Math.floor(Math.random()*harts.length)];
+        h.style.cssText=`left:${Math.random()*95}%;--fd:${(Math.random()*8+6).toFixed(1)}s;--fdelay:${(Math.random()*8).toFixed(1)}s`;
+        document.body.appendChild(h);
+    }
+
+    // ---- SHARED STORAGE (cross-device) ----
+    const SKEY = 'dateInvite_shared_v1';
+
+    async function loadShared() {
+        try {
+            const r = await window.storage.get(SKEY, true);
+            return r ? JSON.parse(r.value) : {};
+        } catch(e) { return {}; }
+    }
+
+    async function saveShared(obj) {
+        try { await window.storage.set(SKEY, JSON.stringify(obj), true); } catch(e){}
+    }
+
+    async function clearShared() {
+        try { await window.storage.delete(SKEY, true); } catch(e){}
+    }
+
+    // ---- SCREENS ----
+    function showScreen(name) {
+        ['ask-section','calendar-section','final-section'].forEach(id=>{
+            document.getElementById(id).style.display='none';
+        });
+        if(name==='ask') document.getElementById('ask-section').style.display='block';
+        if(name==='calendar') document.getElementById('calendar-section').style.display='block';
+        if(name==='final') document.getElementById('final-section').style.display='block';
+        document.getElementById('loading-screen').style.display='none';
+    }
+
+    // ---- NO BUTTON ----
+    let noClicks=0;
+    async function moveNo() {
+        noClicks++;
+        const btn=document.getElementById('btn-no');
+        const bw=btn.offsetWidth, bh=btn.offsetHeight;
+        const maxX=window.innerWidth-bw-10, maxY=window.innerHeight-bh-10;
+        const nx=Math.max(10,Math.random()*maxX), ny=Math.max(10,Math.random()*maxY);
+        btn.style.position='fixed'; btn.style.left=nx+'px'; btn.style.top=ny+'px'; btn.style.zIndex=200;
+        if(noClicks>2){btn.style.fontSize='0.65rem'; btn.style.padding='8px 18px';}
+        if(noClicks>4) btn.style.opacity='0.45';
+        const st=await loadShared(); st.noClicks=noClicks; st.noBtnX=nx; st.noBtnY=ny;
+        await saveShared(st);
+    }
+
+    // ---- YES ----
+    async function sayYes() {
+        const st=await loadShared(); st.screen='calendar'; await saveShared(st);
+        showScreen('calendar'); buildCalendar(); buildTimes();
+    }
+
+    // ---- CALENDAR ----
+    let currentDate=new Date(), selectedDay=null, selectedTime=null;
+    const times=['6:00 PM','7:00 PM','7:30 PM','8:00 PM','8:30 PM','9:00 PM','Afternoon','Lunch'];
+
+    function buildCalendar() {
+        const mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const today=new Date(), yr=currentDate.getFullYear(), mo=currentDate.getMonth();
+        document.getElementById('month-label').textContent=mNames[mo]+' '+yr;
+        const grid=document.getElementById('cal-grid'); grid.innerHTML='';
+        ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
+            const el=document.createElement('div'); el.className='cal-day-name'; el.textContent=d; grid.appendChild(el);
+        });
+        const firstDay=new Date(yr,mo,1).getDay(), dim=new Date(yr,mo+1,0).getDate();
+        for(let i=0;i<firstDay;i++){const el=document.createElement('div');el.className='cal-day empty';grid.appendChild(el);}
+        const todayClean=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+        for(let d=1;d<=dim;d++){
+            const el=document.createElement('div'); el.className='cal-day'; el.textContent=d;
+            const td=new Date(yr,mo,d);
+            if(td<todayClean){el.classList.add('past');}
+            else {
+                if(td.toDateString()===today.toDateString()) el.classList.add('today');
+                if(selectedDay&&td.toDateString()===selectedDay.toDateString()) el.classList.add('selected');
+                el.onclick=()=>selectDay(td,el);
+            }
+            grid.appendChild(el);
+        }
+    }
+
+    async function selectDay(date,el) {
+        selectedDay=date;
+        document.querySelectorAll('.cal-day').forEach(d=>d.classList.remove('selected'));
+        el.classList.add('selected');
+        const st=await loadShared(); st.selectedDay=date.toISOString(); await saveShared(st);
+        checkConfirm();
+    }
+
+    async function changeMonth(dir) {
+        currentDate.setMonth(currentDate.getMonth()+dir); selectedDay=null;
+        const st=await loadShared(); st.selectedDay=null; st.calYear=currentDate.getFullYear(); st.calMonth=currentDate.getMonth();
+        await saveShared(st); buildCalendar(); checkConfirm();
+    }
+
+    function buildTimes() {
+        const grid=document.getElementById('time-grid'); grid.innerHTML='';
+        times.forEach(t=>{
+            const el=document.createElement('div'); el.className='time-slot'; el.textContent=t;
+            if(selectedTime===t) el.classList.add('selected');
+            el.onclick=()=>selectTime(t,el); grid.appendChild(el);
+        });
+    }
+
+    async function selectTime(time,el) {
+        selectedTime=time;
+        document.querySelectorAll('.time-slot').forEach(e=>e.classList.remove('selected'));
+        el.classList.add('selected');
+        const st=await loadShared(); st.selectedTime=time; await saveShared(st);
+        checkConfirm();
+    }
+
+    function checkConfirm() {
+        document.getElementById('btn-confirm').disabled=!(selectedDay&&selectedTime);
+    }
+
+    async function confirmDate() {
+        const opts={weekday:'long',year:'numeric',month:'long',day:'numeric'};
+        const dateStr=selectedDay.toLocaleDateString('en-US',opts);
+        document.getElementById('display-date').textContent=dateStr;
+        document.getElementById('display-time').textContent=selectedTime;
+        const st=await loadShared(); st.screen='final'; st.displayDate=dateStr; st.displayTime=selectedTime;
+        await saveShared(st); showScreen('final');
+    }
+
+    // ---- CANCEL MODAL ----
+    function openCancelModal() {
+        document.getElementById('pw-input').value=''; document.getElementById('pw-error').textContent='';
+        document.getElementById('modal-overlay').classList.add('show');
+        setTimeout(()=>document.getElementById('pw-input').focus(),100);
+    }
+    function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+
+    async function checkPassword() {
+        const val=document.getElementById('pw-input').value;
+        if(val==='MeAndYou') {
+            document.getElementById('modal-overlay').classList.remove('show');
+            await clearShared();
+            noClicks=0; selectedDay=null; selectedTime=null; currentDate=new Date();
+            const btn=document.getElementById('btn-no');
+            btn.style.position='static'; btn.style.left=''; btn.style.top='';
+            btn.style.fontSize=''; btn.style.padding=''; btn.style.opacity='';
+            showScreen('ask');
+        } else {
+            document.getElementById('pw-error').textContent="Hmm, that's not right 💔";
+            document.getElementById('pw-input').value=''; document.getElementById('pw-input').focus();
+        }
+    }
+
+    // ---- INIT: restore from shared storage ----
+    (async function init() {
+        const st=await loadShared();
+
+        // Restore No button
+        if(st.noClicks) {
+            noClicks=st.noClicks;
+            const btn=document.getElementById('btn-no');
+            if(st.noBtnX!==undefined){
+                btn.style.position='fixed'; btn.style.left=st.noBtnX+'px'; btn.style.top=st.noBtnY+'px'; btn.style.zIndex=200;
+            }
+            if(noClicks>2){btn.style.fontSize='0.65rem'; btn.style.padding='8px 18px';}
+            if(noClicks>4) btn.style.opacity='0.45';
+        }
+
+        if(st.calYear!==undefined) currentDate=new Date(st.calYear,st.calMonth,1);
+        if(st.selectedDay) selectedDay=new Date(st.selectedDay);
+        if(st.selectedTime) selectedTime=st.selectedTime;
+
+        if(st.screen==='final'&&st.displayDate&&st.displayTime) {
+            document.getElementById('display-date').textContent=st.displayDate;
+            document.getElementById('display-time').textContent=st.displayTime;
+            showScreen('final');
+        } else if(st.screen==='calendar') {
+            showScreen('calendar'); buildCalendar(); buildTimes(); checkConfirm();
+        } else {
+            showScreen('ask');
+        }
+    })();
+</script>
+</body>
+</html>
