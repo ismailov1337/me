@@ -314,22 +314,19 @@
       ico.className=d?'fas fa-moon':'fas fa-sun';
     });
 
-    /* ── Typewriter: exactly 3 titles, cycle forever ── */
-    const titles=['Student','Software Engineer','Cyber Security Specialist'];
-    let ti=0, ci=0, deleting=false;
+    /* ── Typewriter: single title, types once and stays ── */
+    const title='Software Engineer and Cyber Security Specialist from Uzbekistan';
+    let ci=0;
     const tel=document.getElementById('typed');
+    const tcur=document.getElementById('tcur');
 
     function type(){
-      const w=titles[ti];
-      if(!deleting){
-        tel.textContent=w.slice(0,++ci);
-        if(ci===w.length){ deleting=true; setTimeout(type,1800); return; }
-        setTimeout(type,70+Math.random()*40);
-      } else {
-        tel.textContent=w.slice(0,--ci);
-        if(ci===0){ deleting=false; ti=(ti+1)%titles.length; setTimeout(type,400); return; }
-        setTimeout(type,40);
+      tel.textContent=title.slice(0,++ci);
+      if(ci===title.length){
+        tcur.style.display='none';
+        return;
       }
+      setTimeout(type,70+Math.random()*40);
     }
     setTimeout(type,700);
 
